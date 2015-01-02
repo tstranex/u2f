@@ -1,5 +1,5 @@
-// FIDO U2F Go Library
-// Copyright 2015 The FIDO U2F Go Library Authors. All rights reserved.
+// Go FIDO U2F Library
+// Copyright 2015 The Go FIDO U2F Library Authors. All rights reserved.
 
 /*
 Package u2f implements the server-side parts of the
