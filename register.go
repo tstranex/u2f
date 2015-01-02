@@ -17,7 +17,7 @@ import (
 func (c *Challenge) RegisterRequest() *RegisterRequest {
 	var rr RegisterRequest
 	rr.Version = u2fVersion
-	rr.AppId = c.AppId
+	rr.AppID = c.AppID
 	rr.Challenge = encodeBase64(c.Challenge)
 	return &rr
 }
@@ -43,22 +43,22 @@ func Register(resp RegisterResponse, c Challenge) (*Registration, error) {
 		return nil, errors.New("u2f: challenge has expired")
 	}
 
-	reg_data, err := decodeBase64(resp.RegistrationData)
+	regData, err := decodeBase64(resp.RegistrationData)
 	if err != nil {
 		return nil, err
 	}
 
-	client_data, err := decodeBase64(resp.ClientData)
+	clientData, err := decodeBase64(resp.ClientData)
 	if err != nil {
 		return nil, err
 	}
 
-	reg, err := parseRegistration(reg_data)
+	reg, err := parseRegistration(regData)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := verifyClientData(client_data, c); err != nil {
+	if err := verifyClientData(clientData, c); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +66,7 @@ func Register(resp RegisterResponse, c Challenge) (*Registration, error) {
 		return nil, err
 	}
 
-	if err := verifyRegistrationSignature(*reg, c.AppId, client_data); err != nil {
+	if err := verifyRegistrationSignature(*reg, c.AppID, clientData); err != nil {
 		return nil, err
 	}
 
@@ -94,13 +94,13 @@ func parseRegistration(buf []byte) (*Registration, error) {
 	r.PubKey.Y = y
 	buf = buf[65:]
 
-	kh_len := int(buf[0])
+	khLen := int(buf[0])
 	buf = buf[1:]
-	if len(buf) < kh_len {
+	if len(buf) < khLen {
 		return nil, errors.New("u2f: invalid key handle")
 	}
-	r.KeyHandle = buf[:kh_len]
-	buf = buf[kh_len:]
+	r.KeyHandle = buf[:khLen]
+	buf = buf[khLen:]
 
 	// The length of the x509 cert isn't specified so it has to be inferred
 	// by parsing. We can't use x509.ParseCertificate yet because it returns
@@ -129,13 +129,13 @@ func verifyAttestationCert(r Registration) error {
 }
 
 func verifyRegistrationSignature(
-	r Registration, appid string, client_data []byte) error {
+	r Registration, appid string, clientData []byte) error {
 
-	app_param := sha256.Sum256([]byte(appid))
-	challenge := sha256.Sum256(client_data)
+	appParam := sha256.Sum256([]byte(appid))
+	challenge := sha256.Sum256(clientData)
 
 	buf := []byte{0}
-	buf = append(buf, app_param[:]...)
+	buf = append(buf, appParam[:]...)
 	buf = append(buf, challenge[:]...)
 	buf = append(buf, r.KeyHandle...)
 	pk := elliptic.Marshal(r.PubKey.Curve, r.PubKey.X, r.PubKey.Y)

@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-const yubico_root_cert = `-----BEGIN CERTIFICATE-----
+const yubicoRootCert = `-----BEGIN CERTIFICATE-----
 MIIDHjCCAgagAwIBAgIEG0BT9zANBgkqhkiG9w0BAQsFADAuMSwwKgYDVQQDEyNZ
 dWJpY28gVTJGIFJvb3QgQ0EgU2VyaWFsIDQ1NzIwMDYzMTAgFw0xNDA4MDEwMDAw
 MDBaGA8yMDUwMDkwNDAwMDAwMFowLjEsMCoGA1UEAxMjWXViaWNvIFUyRiBSb290
@@ -29,7 +29,7 @@ U9psmyPzK+Vsgw2jeRQ5JlKDyqE0hebfC1tvFu0CCrJFcw==
 -----END CERTIFICATE-----
 `
 
-const entersekt_cert = `-----BEGIN CERTIFICATE-----
+const entersektCert = `-----BEGIN CERTIFICATE-----
 MIICHjCCAcOgAwIBAgIBADAKBggqhkjOPQQDAjBvMQswCQYDVQQGEwJaQTEVMBMG
 A1UECAwMV2VzdGVybiBDYXBlMRUwEwYDVQQHDAxTdGVsbGVuYm9zY2gxEjAQBgNV
 BAoMCUVudGVyc2VrdDELMAkGA1UECwwCSVQxETAPBgNVBAMMCFRyYW5zYWt0MB4X
@@ -54,4 +54,4 @@ func mustLoadPool(pemCerts []byte) *x509.CertPool {
 	return p
 }
 
-var roots = mustLoadPool([]byte(yubico_root_cert + entersekt_cert))
+var roots = mustLoadPool([]byte(yubicoRootCert + entersektCert))

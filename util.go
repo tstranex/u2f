@@ -73,12 +73,12 @@ func encodeBase64(buf []byte) string {
 type Challenge struct {
 	Challenge     []byte
 	Timestamp     time.Time
-	AppId         string
+	AppID         string
 	TrustedFacets []string
 }
 
-// NewChallange generates a challenge for the given application.
-func NewChallenge(app_id string, trusted_facets []string) (*Challenge, error) {
+// NewChallenge generates a challenge for the given application.
+func NewChallenge(appID string, trustedFacets []string) (*Challenge, error) {
 	challenge := make([]byte, 32)
 	n, err := rand.Read(challenge)
 	if err != nil {
@@ -91,25 +91,25 @@ func NewChallenge(app_id string, trusted_facets []string) (*Challenge, error) {
 	var c Challenge
 	c.Challenge = challenge
 	c.Timestamp = time.Now()
-	c.AppId = app_id
-	c.TrustedFacets = trusted_facets
+	c.AppID = appID
+	c.TrustedFacets = trustedFacets
 	return &c, nil
 }
 
-func verifyClientData(client_data []byte, challenge Challenge) error {
+func verifyClientData(clientData []byte, challenge Challenge) error {
 	var cd ClientData
-	if err := json.Unmarshal(client_data, &cd); err != nil {
+	if err := json.Unmarshal(clientData, &cd); err != nil {
 		return err
 	}
 
-	found_facet_id := false
-	for _, facet_id := range challenge.TrustedFacets {
-		if facet_id == cd.Origin {
-			found_facet_id = true
+	foundFacetID := false
+	for _, facetID := range challenge.TrustedFacets {
+		if facetID == cd.Origin {
+			foundFacetID = true
 			break
 		}
 	}
-	if !found_facet_id {
+	if !foundFacetID {
 		return errors.New("u2f: untrusted facet id")
 	}
 

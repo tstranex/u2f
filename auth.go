@@ -17,7 +17,7 @@ func (c *Challenge) SignRequest(reg Registration) *SignRequest {
 	var sr SignRequest
 	sr.Version = u2fVersion
 	sr.KeyHandle = encodeBase64(reg.KeyHandle)
-	sr.AppId = c.AppId
+	sr.AppID = c.AppID
 	sr.Challenge = encodeBase64(c.Challenge)
 	return &sr
 }
@@ -25,7 +25,7 @@ func (c *Challenge) SignRequest(reg Registration) *SignRequest {
 // Authenticate validates a SignResponse authentication response.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
-func (reg *Registration) Authenticate(resp SignResponse, c Challenge) (new_counter uint32, err error) {
+func (reg *Registration) Authenticate(resp SignResponse, c Challenge) (newCounter uint32, err error) {
 	if time.Now().Sub(c.Timestamp) > timeout {
 		return 0, errors.New("u2f: challenge has expired")
 	}
@@ -33,17 +33,17 @@ func (reg *Registration) Authenticate(resp SignResponse, c Challenge) (new_count
 		return 0, errors.New("u2f: wrong key handle")
 	}
 
-	sig_data, err := decodeBase64(resp.SignatureData)
+	sigData, err := decodeBase64(resp.SignatureData)
 	if err != nil {
 		return 0, err
 	}
 
-	client_data, err := decodeBase64(resp.ClientData)
+	clientData, err := decodeBase64(resp.ClientData)
 	if err != nil {
 		return 0, err
 	}
 
-	ar, err := parseSignResponse(sig_data)
+	ar, err := parseSignResponse(sigData)
 	if err != nil {
 		return 0, err
 	}
@@ -52,11 +52,11 @@ func (reg *Registration) Authenticate(resp SignResponse, c Challenge) (new_count
 		return 0, errors.New("u2f: counter not increasing")
 	}
 
-	if err := verifyClientData(client_data, c); err != nil {
+	if err := verifyClientData(clientData, c); err != nil {
 		return 0, err
 	}
 
-	if err := verifyAuthSignature(*ar, &reg.PubKey, c.AppId, client_data); err != nil {
+	if err := verifyAuthSignature(*ar, &reg.PubKey, c.AppID, clientData); err != nil {
 		return 0, err
 	}
 
@@ -85,11 +85,11 @@ func parseSignResponse(sd []byte) (*authResp, error) {
 
 	var ar authResp
 
-	user_presence := sd[0]
-	if user_presence|1 != 1 {
+	userPresence := sd[0]
+	if userPresence|1 != 1 {
 		return nil, errors.New("u2f: invalid user presence byte")
 	}
-	ar.UserPresenceVerified = user_presence == 1
+	ar.UserPresenceVerified = userPresence == 1
 
 	ar.Counter = uint32(sd[1])<<24 | uint32(sd[2])<<16 | uint32(sd[3])<<8 | uint32(sd[4])
 
@@ -106,17 +106,17 @@ func parseSignResponse(sd []byte) (*authResp, error) {
 	return &ar, nil
 }
 
-func verifyAuthSignature(ar authResp, pub_key *ecdsa.PublicKey, app_id string, client_data []byte) error {
-	app_param := sha256.Sum256([]byte(app_id))
-	challenge := sha256.Sum256(client_data)
+func verifyAuthSignature(ar authResp, pubKey *ecdsa.PublicKey, appID string, clientData []byte) error {
+	appParam := sha256.Sum256([]byte(appID))
+	challenge := sha256.Sum256(clientData)
 
-	buf := make([]byte, 0)
-	buf = append(buf, app_param[:]...)
+	var buf []byte
+	buf = append(buf, appParam[:]...)
 	buf = append(buf, ar.raw...)
 	buf = append(buf, challenge[:]...)
 	hash := sha256.Sum256(buf)
 
-	if !ecdsa.Verify(pub_key, hash[:], ar.sig.R, ar.sig.S) {
+	if !ecdsa.Verify(pubKey, hash[:], ar.sig.R, ar.sig.S) {
 		return errors.New("u2f: invalid signature")
 	}
 
