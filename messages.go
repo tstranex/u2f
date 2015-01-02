@@ -3,6 +3,10 @@
 
 package u2f
 
+import (
+	"encoding/json"
+)
+
 // JwkKey represents a public key used by a browser for the Channel ID TLS
 // extension.
 type JwkKey struct {
@@ -14,10 +18,10 @@ type JwkKey struct {
 
 // ClientData as defined by the FIDO U2F Raw Message Formats specification.
 type ClientData struct {
-	Typ       string `json:"typ"`
-	Challenge string `json:"challenge"`
-	Origin    string `json:"origin"`
-	CIDPubKey string `json:"cid_pubkey"`
+	Typ       string          `json:"typ"`
+	Challenge string          `json:"challenge"`
+	Origin    string          `json:"origin"`
+	CIDPubKey json.RawMessage `json:"cid_pubkey"`
 }
 
 // RegisterRequest as defined by the FIDO U2F Javascript API.
