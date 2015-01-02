@@ -12,26 +12,24 @@ import (
 	"time"
 )
 
-func NewSignRequest(key_handle []byte, app_id string) (*SignRequest, error) {
-	challenge, err := genChallenge()
-	if err != nil {
-		return nil, err
-	}
-
+// SignRequest creates a request to initiate an authentication.
+func (c *Challenge) SignRequest(reg Registration) *SignRequest {
 	var sr SignRequest
 	sr.Version = u2fVersion
-	sr.KeyHandle = encodeBase64(key_handle)
-	sr.AppId = app_id
-	sr.Challenge = challenge
-	return &sr, nil
+	sr.KeyHandle = encodeBase64(reg.KeyHandle)
+	sr.AppId = c.AppId
+	sr.Challenge = encodeBase64(c.Challenge)
+	return &sr
 }
 
-func VerifySignResponse(resp SignResponse, req SignRequest, req_timestamp time.Time, reg Registration, trusted_facets TrustedFacets, counter uint32) (uint32, error) {
-
-	if time.Now().Sub(req_timestamp) > 5*time.Minute {
+// Authenticate validates a SignResponse authentication response.
+// An error is returned if any part of the response fails to validate.
+// The latest counter value is returned, which the caller should store.
+func (reg *Registration) Authenticate(resp SignResponse, c Challenge) (new_counter uint32, err error) {
+	if time.Now().Sub(c.Timestamp) > timeout {
 		return 0, errors.New("u2f: challenge has expired")
 	}
-	if resp.KeyHandle != req.KeyHandle {
+	if resp.KeyHandle != encodeBase64(reg.KeyHandle) {
 		return 0, errors.New("u2f: wrong key handle")
 	}
 
@@ -50,15 +48,15 @@ func VerifySignResponse(resp SignResponse, req SignRequest, req_timestamp time.T
 		return 0, err
 	}
 
-	if ar.Counter < counter {
+	if ar.Counter < reg.Counter {
 		return 0, errors.New("u2f: counter not increasing")
 	}
 
-	if err := verifyClientData(client_data, req.Challenge, trusted_facets); err != nil {
+	if err := verifyClientData(client_data, c); err != nil {
 		return 0, err
 	}
 
-	if err := verifyAuthSignature(*ar, &reg.PubKey, req.AppId, client_data); err != nil {
+	if err := verifyAuthSignature(*ar, &reg.PubKey, c.AppId, client_data); err != nil {
 		return 0, err
 	}
 

@@ -34,7 +34,7 @@ func TestRegistrationExample(t *testing.T) {
 	}
 
 	const expected_sig = "304502201471899bcc3987e62e8202c9b39c33c19033f7340352dba80fcab017db9230e402210082677d673d891933ade6f617e5dbde2e247e70423fd5ad7804a6d3d3961ef871"
-	actual_sig := hex.EncodeToString(r.Signature)
+	actual_sig := hex.EncodeToString(r.signature)
 	if actual_sig != expected_sig {
 		t.Errorf("unexpected signature: %s vs %s",
 			actual_sig, expected_sig)
@@ -49,7 +49,7 @@ func TestRegistrationExample(t *testing.T) {
 
 	const app_id = "http://example.com"
 	const client_data = "{\"typ\":\"navigator.id.finishEnrollment\",\"challenge\":\"vqrS6WXDe1JUs5_c3i4-LkKIHRr-3XVb3azuA5TifHo\",\"cid_pubkey\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"HzQwlfXX7Q4S5MtCCnZUNBw3RMzPO9tOyWjBqRl4tJ8\",\"y\":\"XVguGFLIZx1fXg3wNqfdbn75hi4-_7-BxhMljw42Ht4\"},\"origin\":\"http://example.com\"}"
-	err = verifySignature(*r, app_id, []byte(client_data))
+	err = verifyRegistrationSignature(*r, app_id, []byte(client_data))
 	if err != nil {
 		t.Errorf("VerifySignature error: %v", err)
 	}

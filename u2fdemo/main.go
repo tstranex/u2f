@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/tstranex/u2f"
 )
@@ -18,25 +17,20 @@ var trusted_facets = []string{app_id}
 
 // Normally these state variables would be stored in a database.
 // For the purposes of the demo, we just store them in memory.
-var reg_req *u2f.RegisterRequest
-var reg_req_time time.Time
+var challenge *u2f.Challenge
 var registration *u2f.Registration
-var sign_req *u2f.SignRequest
-var sign_req_time time.Time
-var counter uint32
 
 func registerRequest(w http.ResponseWriter, r *http.Request) {
-	req, err := u2f.NewRegisterRequest(app_id)
+	c, err := u2f.NewChallenge(app_id, trusted_facets)
 	if err != nil {
-		log.Printf("u2f.NewRegisterRequest error: %v", err)
+		log.Printf("u2f.NewChallenge error: %v", err)
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
+	challenge = c
+	req := c.RegisterRequest()
 
 	log.Printf("registerRequest: %+v", req)
-
-	reg_req = req
-	reg_req_time = time.Now()
 	json.NewEncoder(w).Encode(req)
 }
 
@@ -49,24 +43,20 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("registerResponse: %+v", reg_resp)
 
-	if reg_req == nil {
-		http.Error(w, "request not found", http.StatusBadRequest)
+	if challenge == nil {
+		http.Error(w, "challenge not found", http.StatusBadRequest)
 		return
 	}
 
-	reg, err := u2f.VerifyRegisterResponse(
-		reg_resp, *reg_req, reg_req_time,
-		u2f.TrustedFacets{Ids: trusted_facets})
+	reg, err := u2f.Register(reg_resp, *challenge)
 	if err != nil {
-		log.Printf("VerifyRegisterResponse error: %v", err)
+		log.Printf("u2f.Register error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
 		return
 	}
-
 	registration = reg
 
 	log.Printf("Registration success: %+v", registration)
-
 	w.Write([]byte("success"))
 }
 
@@ -76,17 +66,16 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req, err := u2f.NewSignRequest(registration.KeyHandle, app_id)
+	c, err := u2f.NewChallenge(app_id, trusted_facets)
 	if err != nil {
-		log.Printf("u2f.NewSignRequest error: %v", err)
+		log.Printf("u2f.NewChallenge error: %v", err)
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
+	challenge = c
 
+	req := c.SignRequest(*registration)
 	log.Printf("signRequest: %+v", req)
-
-	sign_req = req
-	sign_req_time = time.Now()
 	json.NewEncoder(w).Encode(req)
 }
 
@@ -99,8 +88,8 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("signResponse: %+v", sign_resp)
 
-	if sign_req == nil {
-		http.Error(w, "request not found", http.StatusBadRequest)
+	if challenge == nil {
+		http.Error(w, "challenge missing", http.StatusBadRequest)
 		return
 	}
 	if registration == nil {
@@ -108,15 +97,13 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	new_counter, err := u2f.VerifySignResponse(
-		sign_resp, *sign_req, sign_req_time, *registration,
-		u2f.TrustedFacets{Ids: trusted_facets}, counter)
+	new_counter, err := registration.Authenticate(sign_resp, *challenge)
 	if err != nil {
 		log.Printf("VerifySignResponse error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
 		return
 	}
-	counter = new_counter
+	registration.Counter = new_counter
 
 	w.Write([]byte("success"))
 }

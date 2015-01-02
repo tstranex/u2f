@@ -13,22 +13,33 @@ import (
 	"time"
 )
 
-func NewRegisterRequest(app_id string) (*RegisterRequest, error) {
-	challenge, err := genChallenge()
-	if err != nil {
-		return nil, err
-	}
-
+// RegisterRequest creates a request to enrol a new token.
+func (c *Challenge) RegisterRequest() *RegisterRequest {
 	var rr RegisterRequest
 	rr.Version = u2fVersion
-	rr.AppId = app_id
-	rr.Challenge = challenge
-	return &rr, nil
+	rr.AppId = c.AppId
+	rr.Challenge = encodeBase64(c.Challenge)
+	return &rr
 }
 
-func VerifyRegisterResponse(resp RegisterResponse, req RegisterRequest, req_timestamp time.Time, trusted_facets TrustedFacets) (*Registration, error) {
+// Registration represents a single enrolment or pairing between an
+// application and a token. This data will typically be stored in a database.
+type Registration struct {
+	KeyHandle []byte
+	PubKey    ecdsa.PublicKey
+	Counter   uint32
 
-	if time.Now().Sub(req_timestamp) > 5*time.Minute {
+	// AttestationCert can be nil for Authenticate requests.
+	AttestationCert *x509.Certificate
+
+	signature []byte
+}
+
+// Register validates a RegisterResponse message to enrol a new token.
+// An error is returned if any part of the response fails to validate.
+// The returned Registration should be stored by the caller.
+func Register(resp RegisterResponse, c Challenge) (*Registration, error) {
+	if time.Now().Sub(c.Timestamp) > timeout {
 		return nil, errors.New("u2f: challenge has expired")
 	}
 
@@ -47,7 +58,7 @@ func VerifyRegisterResponse(resp RegisterResponse, req RegisterRequest, req_time
 		return nil, err
 	}
 
-	if err := verifyClientData(client_data, req.Challenge, trusted_facets); err != nil {
+	if err := verifyClientData(client_data, c); err != nil {
 		return nil, err
 	}
 
@@ -55,18 +66,11 @@ func VerifyRegisterResponse(resp RegisterResponse, req RegisterRequest, req_time
 		return nil, err
 	}
 
-	if err := verifySignature(*reg, req.AppId, client_data); err != nil {
+	if err := verifyRegistrationSignature(*reg, c.AppId, client_data); err != nil {
 		return nil, err
 	}
 
 	return reg, nil
-}
-
-type Registration struct {
-	PubKey          ecdsa.PublicKey
-	KeyHandle       []byte
-	AttestationCert *x509.Certificate
-	Signature       []byte
 }
 
 func parseRegistration(buf []byte) (*Registration, error) {
@@ -106,7 +110,7 @@ func parseRegistration(buf []byte) (*Registration, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.Signature = rest
+	r.signature = rest
 
 	buf = buf[:len(buf)-len(rest)]
 	cert, err := x509.ParseCertificate(buf)
@@ -124,7 +128,9 @@ func verifyAttestationCert(r Registration) error {
 	return err
 }
 
-func verifySignature(r Registration, appid string, client_data []byte) error {
+func verifyRegistrationSignature(
+	r Registration, appid string, client_data []byte) error {
+
 	app_param := sha256.Sum256([]byte(appid))
 	challenge := sha256.Sum256(client_data)
 
@@ -136,5 +142,5 @@ func verifySignature(r Registration, appid string, client_data []byte) error {
 	buf = append(buf, pk...)
 
 	return r.AttestationCert.CheckSignature(
-		x509.ECDSAWithSHA256, buf, r.Signature)
+		x509.ECDSAWithSHA256, buf, r.signature)
 }

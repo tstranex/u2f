@@ -16,7 +16,7 @@ Please visit http://godoc.org/github.com/tstranex/u2f
 ## Installation
 
 ```
-go get github.com/tstranex/u2f
+$ go get github.com/tstranex/u2f
 ```
 
 ## Example
@@ -24,11 +24,13 @@ go get github.com/tstranex/u2f
 See the code in the u2fdemo directory for an full example server.
 
 ```
-go install github.com/tstranex/u2f/u2fdemo
-./bin/u2fdemo
+$ go install github.com/tstranex/u2f/u2fdemo
+$ ./bin/u2fdemo
 ```
 
-Open http://localhost:3483 in Chrome.
+Open http://localhost:3483 in Chrome and install the
+[Chrome extension](https://chrome.google.com/webstore/detail/fido-u2f-universal-2nd-fa/pfboblefjcgdjicmnffhdgionmgcdmne).
+Then you can test registering and authenticating using your token.
 
 ## License
 
