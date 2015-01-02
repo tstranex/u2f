@@ -1,3 +1,6 @@
+// FIDO U2F Go Library
+// Copyright 2015 The FIDO U2F Go Library Authors. All rights reserved.
+
 package u2f
 
 type JwkKey struct {
