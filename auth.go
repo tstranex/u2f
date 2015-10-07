@@ -25,7 +25,7 @@ func (c *Challenge) SignRequest(reg Registration) *SignRequest {
 // Authenticate validates a SignResponse authentication response.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
-func (reg *Registration) Authenticate(resp SignResponse, c Challenge) (newCounter uint32, err error) {
+func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter uint32) (newCounter uint32, err error) {
 	if time.Now().Sub(c.Timestamp) > timeout {
 		return 0, errors.New("u2f: challenge has expired")
 	}
@@ -48,7 +48,7 @@ func (reg *Registration) Authenticate(resp SignResponse, c Challenge) (newCounte
 		return 0, err
 	}
 
-	if ar.Counter < reg.Counter {
+	if ar.Counter < counter {
 		return 0, errors.New("u2f: counter not increasing")
 	}
 

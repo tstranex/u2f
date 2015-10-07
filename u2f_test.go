@@ -47,11 +47,16 @@ func TestFull(t *testing.T) {
 		t.Error(err)
 	}
 
-	newCounter, err := reg.Authenticate(signResp, authChallenge)
+	newCounter, err := reg.Authenticate(signResp, authChallenge, 0)
 	if err != nil {
 		t.Error(err)
 	}
 	if newCounter != 6 {
 		t.Errorf("Wrong new counter: %d", newCounter)
+	}
+
+	newCounter, err = reg.Authenticate(signResp, authChallenge, 7)
+	if err == nil {
+		t.Errorf("Expected error due to decreasing counter")
 	}
 }

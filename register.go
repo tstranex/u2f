@@ -25,14 +25,14 @@ func (c *Challenge) RegisterRequest() *RegisterRequest {
 // Registration represents a single enrolment or pairing between an
 // application and a token. This data will typically be stored in a database.
 type Registration struct {
+	// Raw serialized registration data as received from the token.
+	Raw []byte
+
 	KeyHandle []byte
 	PubKey    ecdsa.PublicKey
-	Counter   uint32
 
 	// AttestationCert can be nil for Authenticate requests.
 	AttestationCert *x509.Certificate
-
-	signature []byte
 }
 
 // Register validates a RegisterResponse message to enrol a new token.
@@ -53,7 +53,7 @@ func Register(resp RegisterResponse, c Challenge) (*Registration, error) {
 		return nil, err
 	}
 
-	reg, err := parseRegistration(regData)
+	reg, sig, err := parseRegistration(regData)
 	if err != nil {
 		return nil, err
 	}
@@ -66,28 +66,29 @@ func Register(resp RegisterResponse, c Challenge) (*Registration, error) {
 		return nil, err
 	}
 
-	if err := verifyRegistrationSignature(*reg, c.AppID, clientData); err != nil {
+	if err := verifyRegistrationSignature(*reg, sig, c.AppID, clientData); err != nil {
 		return nil, err
 	}
 
 	return reg, nil
 }
 
-func parseRegistration(buf []byte) (*Registration, error) {
+func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	if len(buf) < 1+65+1+1+1 {
-		return nil, errors.New("u2f: data is too short")
+		return nil, nil, errors.New("u2f: data is too short")
 	}
 
+	var r Registration
+	r.Raw = buf
+
 	if buf[0] != 0x05 {
-		return nil, errors.New("u2f: invalid reserved byte")
+		return nil, nil, errors.New("u2f: invalid reserved byte")
 	}
 	buf = buf[1:]
 
-	var r Registration
-
 	x, y := elliptic.Unmarshal(elliptic.P256(), buf[:65])
 	if x == nil {
-		return nil, errors.New("u2f: invalid public key")
+		return nil, nil, errors.New("u2f: invalid public key")
 	}
 	r.PubKey.Curve = elliptic.P256()
 	r.PubKey.X = x
@@ -97,7 +98,7 @@ func parseRegistration(buf []byte) (*Registration, error) {
 	khLen := int(buf[0])
 	buf = buf[1:]
 	if len(buf) < khLen {
-		return nil, errors.New("u2f: invalid key handle")
+		return nil, nil, errors.New("u2f: invalid key handle")
 	}
 	r.KeyHandle = buf[:khLen]
 	buf = buf[khLen:]
@@ -106,20 +107,34 @@ func parseRegistration(buf []byte) (*Registration, error) {
 	// by parsing. We can't use x509.ParseCertificate yet because it returns
 	// an error if there are any trailing bytes. So parse raw asn1 as a
 	// workaround to get the length.
-	rest, err := asn1.Unmarshal(buf, &asn1.RawValue{})
+	sig, err := asn1.Unmarshal(buf, &asn1.RawValue{})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	r.signature = rest
 
-	buf = buf[:len(buf)-len(rest)]
+	buf = buf[:len(buf)-len(sig)]
 	cert, err := x509.ParseCertificate(buf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	r.AttestationCert = cert
 
-	return &r, nil
+	return &r, sig, nil
+}
+
+// Implements encoding.BinaryMarshaler.
+func (r *Registration) UnmarshalBinary(data []byte) error {
+	reg, _, err := parseRegistration(data)
+	if err != nil {
+		return err
+	}
+	*r = *reg
+	return nil
+}
+
+// Implements encoding.BinaryUnmarshaler.
+func (r *Registration) MarshalBinary() ([]byte, error) {
+	return r.Raw, nil
 }
 
 func verifyAttestationCert(r Registration) error {
@@ -129,7 +144,7 @@ func verifyAttestationCert(r Registration) error {
 }
 
 func verifyRegistrationSignature(
-	r Registration, appid string, clientData []byte) error {
+	r Registration, signature []byte, appid string, clientData []byte) error {
 
 	appParam := sha256.Sum256([]byte(appid))
 	challenge := sha256.Sum256(clientData)
@@ -142,5 +157,5 @@ func verifyRegistrationSignature(
 	buf = append(buf, pk...)
 
 	return r.AttestationCert.CheckSignature(
-		x509.ECDSAWithSHA256, buf, r.signature)
+		x509.ECDSAWithSHA256, buf, signature)
 }

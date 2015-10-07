@@ -19,6 +19,7 @@ var trustedFacets = []string{appID}
 // For the purposes of the demo, we just store them in memory.
 var challenge *u2f.Challenge
 var registration *u2f.Registration
+var counter int
 
 func registerRequest(w http.ResponseWriter, r *http.Request) {
 	c, err := u2f.NewChallenge(appID, trustedFacets)
@@ -55,6 +56,7 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	registration = reg
+	counter = 0
 
 	log.Printf("Registration success: %+v", registration)
 	w.Write([]byte("success"))
@@ -97,13 +99,13 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newCounter, err := registration.Authenticate(signResp, *challenge)
+	newCounter, err := registration.Authenticate(signResp, *challenge, counter)
 	if err != nil {
 		log.Printf("VerifySignResponse error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
 		return
 	}
-	registration.Counter = newCounter
+	counter = newCounter
 
 	w.Write([]byte("success"))
 }
