@@ -35,10 +35,22 @@ type Registration struct {
 	AttestationCert *x509.Certificate
 }
 
+type Config struct {
+	// SkipAttestationVerify controls whether the token attestation
+	// certificate should be verified on registration. Ideally it should
+	// always be verified. However, there is currently no public list of
+	// trusted attestation root certificates so it may be necessary to skip.
+	SkipAttestationVerify bool
+}
+
 // Register validates a RegisterResponse message to enrol a new token.
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
-func Register(resp RegisterResponse, c Challenge) (*Registration, error) {
+func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration, error) {
+	if config == nil {
+		config = &Config{}
+	}
+
 	if time.Now().Sub(c.Timestamp) > timeout {
 		return nil, errors.New("u2f: challenge has expired")
 	}
@@ -62,7 +74,7 @@ func Register(resp RegisterResponse, c Challenge) (*Registration, error) {
 		return nil, err
 	}
 
-	if err := verifyAttestationCert(*reg); err != nil {
+	if err := verifyAttestationCert(*reg, config); err != nil {
 		return nil, err
 	}
 
@@ -137,7 +149,11 @@ func (r *Registration) MarshalBinary() ([]byte, error) {
 	return r.Raw, nil
 }
 
-func verifyAttestationCert(r Registration) error {
+func verifyAttestationCert(r Registration, config *Config) error {
+	if config.SkipAttestationVerify {
+		return nil
+	}
+
 	opts := x509.VerifyOptions{Roots: roots}
 	_, err := r.AttestationCert.Verify(opts)
 	return err

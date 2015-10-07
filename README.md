@@ -23,7 +23,7 @@ req, _ := c.RegisterRequest()
 // Send the request to the browser.
 var resp RegisterResponse
 // Read resp from the browser.
-reg, err := Register(resp, c)
+reg, err := Register(resp, c, nil)
 if err != nil {
     // Registration failed.
 }

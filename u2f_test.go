@@ -28,7 +28,7 @@ func TestFull(t *testing.T) {
 		t.Error(err)
 	}
 
-	reg, err := Register(regResp, registerChallenge)
+	reg, err := Register(regResp, registerChallenge, nil)
 	if err != nil {
 		t.Error(err)
 	}

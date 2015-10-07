@@ -49,7 +49,7 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reg, err := u2f.Register(regResp, *challenge)
+	reg, err := u2f.Register(regResp, *challenge, nil)
 	if err != nil {
 		log.Printf("u2f.Register error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
