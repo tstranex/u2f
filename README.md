@@ -16,36 +16,42 @@ documentation.
 
 ### How to enrol a new token
 
-```
+```go
 app_id := "http://localhost"
+
+// Send registration request to the browser.
 c, _ := NewChallenge(app_id, []string{app_id})
 req, _ := c.RegisterRequest()
-// Send the request to the browser.
+
+// Read response from the browser.
 var resp RegisterResponse
-// Read resp from the browser.
 reg, err := Register(resp, c, nil)
 if err != nil {
     // Registration failed.
 }
-// Store reg in the database.
+
+// Store registration in the database.
 ```
 
 ### How to perform an authentication
 
-```
+```go
+// Fetch registration and counter from the database.
 var reg Registration
-// Fetch reg from the database.
+var counter uint32
+
+// Send authentication request to the browser.
 c, _ := NewChallenge(app_id, []string{app_id})
 req, _ := c.SignRequest(reg)
-// Send the request to the browser.
+
+// Read response from the browser.
 var resp SignResponse
-// Read resp from the browser.
-new_counter, err := reg.Authenticate(resp, c)
+newCounter, err := reg.Authenticate(resp, c, counter)
 if err != nil {
     // Authentication failed.
 }
-reg.Counter = new_counter
-// Store updated Registration in the database.
+
+// Store updated counter in the database.
 ```
 
 ## Installation

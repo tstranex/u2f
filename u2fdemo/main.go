@@ -18,8 +18,8 @@ var trustedFacets = []string{appID}
 // Normally these state variables would be stored in a database.
 // For the purposes of the demo, we just store them in memory.
 var challenge *u2f.Challenge
-var registration *u2f.Registration
-var counter int
+var registration []byte
+var counter uint32
 
 func registerRequest(w http.ResponseWriter, r *http.Request) {
 	c, err := u2f.NewChallenge(appID, trustedFacets)
@@ -55,7 +55,13 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
 		return
 	}
-	registration = reg
+	buf, err := reg.MarshalBinary()
+	if err != nil {
+		log.Printf("reg.MarshalBinary error: %v", err)
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
+	registration = buf
 	counter = 0
 
 	log.Printf("Registration success: %+v", registration)
@@ -76,7 +82,14 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	challenge = c
 
-	req := c.SignRequest(*registration)
+	var reg u2f.Registration
+	if err := reg.UnmarshalBinary(registration); err != nil {
+		log.Printf("reg.UnmarshalBinary error: %v", err)
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
+
+	req := c.SignRequest(reg)
 	log.Printf("signRequest: %+v", req)
 	json.NewEncoder(w).Encode(req)
 }
@@ -99,12 +112,20 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newCounter, err := registration.Authenticate(signResp, *challenge, counter)
+	var reg u2f.Registration
+	if err := reg.UnmarshalBinary(registration); err != nil {
+		log.Printf("reg.UnmarshalBinary error: %v", err)
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
+
+	newCounter, err := reg.Authenticate(signResp, *challenge, counter)
 	if err != nil {
 		log.Printf("VerifySignResponse error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
 		return
 	}
+	log.Printf("newCounter: %d", newCounter)
 	counter = newCounter
 
 	w.Write([]byte("success"))
@@ -127,6 +148,14 @@ const indexHTML = `
 
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
     <script>
+      function checkExtension() {
+        if (!window.u2f) {
+          alert('Please install the Chrome U2F extension first.');
+          return false;
+        }
+        return true;
+      }
+
       function u2fRegistered(resp) {
         $.post('/registerResponse', JSON.stringify(resp)).done(function() {
           alert('Success');
@@ -134,6 +163,9 @@ const indexHTML = `
       }
 
       function register() {
+        if (!checkExtension()) {
+          return;
+        }
         $.getJSON('/registerRequest').done(function(req) {
           u2f.register([req], [], u2fRegistered, 100)
         });
@@ -146,6 +178,9 @@ const indexHTML = `
       }
 
       function sign() {
+        if (!checkExtension()) {
+          return;
+        }
         $.getJSON('/signRequest').done(function(req) {
           u2f.sign([req], u2fSigned, 10);
         });
@@ -166,5 +201,7 @@ func main() {
 	http.HandleFunc("/registerResponse", registerResponse)
 	http.HandleFunc("/signRequest", signRequest)
 	http.HandleFunc("/signResponse", signResponse)
+
+	log.Printf("Running on %s", appID)
 	log.Fatal(http.ListenAndServe(":3483", nil))
 }
