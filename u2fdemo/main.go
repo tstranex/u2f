@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"yuvalGithub/u2f"
+	"github.com/tstranex/u2f"
 )
 
 const appID = "https://localhost:3483"

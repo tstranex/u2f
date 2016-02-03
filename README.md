@@ -69,8 +69,7 @@ $ go install github.com/tstranex/u2f/u2fdemo
 $ ./bin/u2fdemo
 ```
 
-Open http://localhost:3483 in Chrome and install the
-[Chrome extension](https://chrome.google.com/webstore/detail/fido-u2f-universal-2nd-fa/pfboblefjcgdjicmnffhdgionmgcdmne).
+Open http://localhost:3483 in Chrome 
 You can then test registering and authenticating using your token.
 
 ## License
