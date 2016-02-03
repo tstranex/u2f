@@ -8,10 +8,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/tstranex/u2f"
+	"fido/u2f"
 )
 
-const appID = "http://localhost:3483"
+const appID = "https://localhost:3483"
 
 var trustedFacets = []string{appID}
 
@@ -41,8 +41,6 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid response: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	log.Printf("registerResponse: %+v", regResp)
 
 	if challenge == nil {
 		http.Error(w, "challenge not found", http.StatusBadRequest)
@@ -88,8 +86,10 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error", http.StatusInternalServerError)
 		return
 	}
+	var req u2f.AuthenticateRequest
+	req.Type = "u2f_sign_request"
+	req.SignRequests = append(req.SignRequests, *c.SignRequest(reg))
 
-	req := c.SignRequest(reg)
 	log.Printf("signRequest: %+v", req)
 	json.NewEncoder(w).Encode(req)
 }
@@ -135,56 +135,44 @@ const indexHTML = `
 <!DOCTYPE html>
 <html>
   <head>
-    <script type="text/javascript" src="chrome-extension://pfboblefjcgdjicmnffhdgionmgcdmne/u2f-api.js"></script>
+    <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
+  
   </head>
   <body>
     <h1>FIDO U2F Go Library Demo</h1>
 
     <ul>
-      <li><a href="https://chrome.google.com/webstore/detail/fido-u2f-universal-2nd-fa/pfboblefjcgdjicmnffhdgionmgcdmne">Install the Chrome extension</a></li>
       <li><a href="javascript:register();">Register token</a></li>
       <li><a href="javascript:sign();">Authenticate</a></li>
     </ul>
 
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
     <script>
-      function checkExtension() {
-        if (!window.u2f) {
-          alert('Please install the Chrome U2F extension first.');
-          return false;
-        }
-        return true;
-      }
+	function u2fRegistered(resp) {
+		$.post('/registerResponse', JSON.stringify(resp)).done(function() {
+		 	alert('Success');
+		});
+	}
 
-      function u2fRegistered(resp) {
-        $.post('/registerResponse', JSON.stringify(resp)).done(function() {
-          alert('Success');
-        });
-      }
-
-      function register() {
-        if (!checkExtension()) {
-          return;
-        }
+	function register() {
         $.getJSON('/registerRequest').done(function(req) {
-          u2f.register([req], [], u2fRegistered, 100)
+          	u2f.register([req], [], u2fRegistered, 1000);
         });
       }
 
-      function u2fSigned(resp) {
+	function u2fSigned(resp) {
         $.post('/signResponse', JSON.stringify(resp)).done(function() {
-          alert('Success');
+			alert('Success');
         });
-      }
+	}
 
-      function sign() {
-        if (!checkExtension()) {
-          return;
-        }
-        $.getJSON('/signRequest').done(function(req) {
-          u2f.sign([req], u2fSigned, 10);
-        });
-      }
+	function sign() {
+		$.getJSON('/signRequest').done(function(req) {
+			console.log('sign req -',req.signRequests)
+			u2f.sign(req.signRequests, u2fSigned, 10);
+		});
+	}
+
     </script>
 
   </body>
@@ -203,5 +191,5 @@ func main() {
 	http.HandleFunc("/signResponse", signResponse)
 
 	log.Printf("Running on %s", appID)
-	log.Fatal(http.ListenAndServe(":3483", nil))
+	log.Fatal(http.ListenAndServeTLS(":3483", "server.crt", "server.key", nil))
 }
