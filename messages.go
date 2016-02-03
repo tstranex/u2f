@@ -45,11 +45,6 @@ type SignRequest struct {
 	AppID     string `json:"appId"`
 }
 
-type AuthenticateRequest struct {
-	Type         string        `json:"type"`
-	SignRequests []SignRequest `json:"signRequests"`
-}
-
 // SignResponse as defined by the FIDO U2F Javascript API.
 type SignResponse struct {
 	KeyHandle     string `json:"keyHandle"`
