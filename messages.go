@@ -26,8 +26,8 @@ type ClientData struct {
 
 // RegisterRequest as defined by the FIDO U2F Javascript API.
 type RegisterRequest struct {
-	Version   string `json:"version"`
 	Challenge string `json:"challenge"`
+	Version   string `json:"version"`
 	AppID     string `json:"appId"`
 }
 
@@ -43,6 +43,11 @@ type SignRequest struct {
 	Challenge string `json:"challenge"`
 	KeyHandle string `json:"keyHandle"`
 	AppID     string `json:"appId"`
+}
+
+type AuthenticateRequest struct {
+	Type         string        `json:"type"`
+	SignRequests []SignRequest `json:"signRequests"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.
