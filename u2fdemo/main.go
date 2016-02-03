@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"fido/u2f"
+	"yuvalGithub/u2f"
 )
 
 const appID = "https://localhost:3483"
@@ -191,5 +191,5 @@ func main() {
 	http.HandleFunc("/signResponse", signResponse)
 
 	log.Printf("Running on %s", appID)
-	log.Fatal(http.ListenAndServeTLS(":3483", "server.crt", "server.key", nil))
+	log.Fatal(http.ListenAndServeTLS(":3483", "server.cert", "server.key", nil))
 }
