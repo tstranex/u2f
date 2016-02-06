@@ -1,5 +1,7 @@
 // Go FIDO U2F Library
 // Copyright 2015 The Go FIDO U2F Library Authors. All rights reserved.
+// Use of this source code is governed by the MIT
+// license that can be found in the LICENSE file.
 
 /*
 Package u2f implements the server-side parts of the
