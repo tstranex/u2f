@@ -10,11 +10,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/YuvalJoseph/u2f"
+	"github.com/tstranex/u2f"
 )
 
 type AuthenticateRequest struct {
-	Type         string            `json:"type"`
 	SignRequests []u2f.SignRequest `json:"signRequests"`
 }
 
@@ -84,7 +83,6 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 	challenge = c
 
 	var req AuthenticateRequest
-	req.Type = "u2f_sign_request"
 	for _, reg := range registration {
 		sr := *c.SignRequest(reg)
 		req.SignRequests = append(req.SignRequests, sr)
@@ -132,7 +130,7 @@ const indexHTML = `
 <html>
   <head>
     <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
-  
+
   </head>
   <body>
     <h1>FIDO U2F Go Library Demo</h1>
@@ -144,6 +142,7 @@ const indexHTML = `
 
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
     <script>
+
   function u2fRegistered(resp) {
     $.post('/registerResponse', JSON.stringify(resp)).done(function() {
       alert('Success');
@@ -187,5 +186,6 @@ func main() {
 	http.HandleFunc("/signResponse", signResponse)
 
 	log.Printf("Running on %s", appID)
-	log.Fatal(http.ListenAndServeTLS(":3483", "server.cert", "server.key", nil))
+	const dir = "src/github.com/tstranex/u2f/u2fdemo"
+	log.Fatal(http.ListenAndServeTLS(":3483", dir+"/server.cert", dir+"/server.key", nil))
 }

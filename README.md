@@ -69,7 +69,8 @@ $ go install github.com/tstranex/u2f/u2fdemo
 $ ./bin/u2fdemo
 ```
 
-Open http://localhost:3483 in Chrome 
+Open https://localhost:3483 in Chrome.
+Ignore the SSL warning (due to the self-signed certificate for localhost).
 You can then test registering and authenticating using your token.
 
 ## License
