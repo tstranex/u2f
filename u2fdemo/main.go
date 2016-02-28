@@ -6,6 +6,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 	"github.com/tstranex/u2f"
 )
 
-type AuthenticateRequest struct {
+type authenticateRequest struct {
 	SignRequests []u2f.SignRequest `json:"signRequests"`
 }
 
@@ -82,10 +83,10 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	challenge = c
 
-	var req AuthenticateRequest
+	var req authenticateRequest
 	for _, reg := range registration {
-		sr := *c.SignRequest(reg)
-		req.SignRequests = append(req.SignRequests, sr)
+		sr := c.SignRequest(reg)
+		req.SignRequests = append(req.SignRequests, *sr)
 	}
 
 	log.Printf("authenitcateRequest: %+v", req)
@@ -144,6 +145,7 @@ const indexHTML = `
     <script>
 
   function u2fRegistered(resp) {
+    console.log(resp);
     $.post('/registerResponse', JSON.stringify(resp)).done(function() {
       alert('Success');
     });
@@ -151,11 +153,13 @@ const indexHTML = `
 
   function register() {
     $.getJSON('/registerRequest').done(function(req) {
-    u2f.register([req], [], u2fRegistered, 1000);
+      console.log(req);
+      u2f.register([req], [], u2fRegistered, 60);
     });
   }
 
   function u2fSigned(resp) {
+    console.log(resp);
     $.post('/signResponse', JSON.stringify(resp)).done(function() {
       alert('Success');
     });
@@ -163,8 +167,8 @@ const indexHTML = `
 
   function sign() {
     $.getJSON('/signRequest').done(function(req) {
-      console.log('sign req -',req.signRequests)
-      u2f.sign(req.signRequests, u2fSigned, 10);
+      console.log(req);
+      u2f.sign(req.signRequests, u2fSigned, 60);
     });
   }
 
@@ -185,7 +189,15 @@ func main() {
 	http.HandleFunc("/signRequest", signRequest)
 	http.HandleFunc("/signResponse", signResponse)
 
+	certs, err := tls.X509KeyPair([]byte(tlsCert), []byte(tlsKey))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	log.Printf("Running on %s", appID)
-	const dir = "src/github.com/tstranex/u2f/u2fdemo"
-	log.Fatal(http.ListenAndServeTLS(":3483", dir+"/server.cert", dir+"/server.key", nil))
+
+	var s http.Server
+	s.Addr = ":3483"
+	s.TLSConfig = &tls.Config{Certificates: []tls.Certificate{certs}}
+	log.Fatal(s.ListenAndServeTLS("", ""))
 }
