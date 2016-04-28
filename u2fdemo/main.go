@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/tstranex/u2f"
 )
@@ -38,9 +39,15 @@ func registerRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	challenge = c
 	req := c.RegisterRequest()
-
 	log.Printf("registerRequest: %+v", req)
-	json.NewEncoder(w).Encode(req)
+	bts, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Could not marshal request")
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
+	w.Write(bts)
+	//json.NewEncoder(w).Encode(req)
 }
 
 func registerResponse(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +118,6 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var err error
 	for _, reg := range registration {
 		newCounter, err := reg.Authenticate(signResp, *challenge, counter)
 		if err == nil {
@@ -122,17 +128,13 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	log.Printf("VerifySignResponse error: %v", err)
 	http.Error(w, "error verifying response", http.StatusInternalServerError)
 }
 
 const indexHTML = `
 <!DOCTYPE html>
 <html>
-  <head>
-    <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
-
-  </head>
+  <head></head>
   <body>
     <h1>FIDO U2F Go Library Demo</h1>
 
@@ -142,6 +144,7 @@ const indexHTML = `
     </ul>
 
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+		<script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
     <script>
 
   function u2fRegistered(resp) {
@@ -154,7 +157,7 @@ const indexHTML = `
   function register() {
     $.getJSON('/registerRequest').done(function(req) {
       console.log(req);
-      u2f.register([req], [], u2fRegistered, 60);
+      u2f.register(req.appID, [req], [], u2fRegistered, 60);
     });
   }
 
@@ -188,16 +191,15 @@ func main() {
 	http.HandleFunc("/registerResponse", registerResponse)
 	http.HandleFunc("/signRequest", signRequest)
 	http.HandleFunc("/signResponse", signResponse)
-
 	certs, err := tls.X509KeyPair([]byte(tlsCert), []byte(tlsKey))
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	log.Printf("Running on %s", appID)
-
 	var s http.Server
 	s.Addr = ":3483"
 	s.TLSConfig = &tls.Config{Certificates: []tls.Certificate{certs}}
-	log.Fatal(s.ListenAndServeTLS("", ""))
+	crt, _ := filepath.Abs("./tls.crt")
+	key, _ := filepath.Abs("./tls.key")
+	log.Fatal(s.ListenAndServeTLS(crt, key))
 }
