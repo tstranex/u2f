@@ -130,6 +130,7 @@ const indexHTML = `
 <!DOCTYPE html>
 <html>
   <head>
+    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
     <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
 
   </head>
@@ -141,7 +142,6 @@ const indexHTML = `
       <li><a href="javascript:sign();">Authenticate</a></li>
     </ul>
 
-    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
     <script>
 
   function u2fRegistered(resp) {
@@ -154,7 +154,7 @@ const indexHTML = `
   function register() {
     $.getJSON('/registerRequest').done(function(req) {
       console.log(req);
-      u2f.register([req], [], u2fRegistered, 60);
+      u2f.register(req.appId, [req], [], u2fRegistered, 60);
     });
   }
 
@@ -168,7 +168,8 @@ const indexHTML = `
   function sign() {
     $.getJSON('/signRequest').done(function(req) {
       console.log(req);
-      u2f.sign(req.signRequests, u2fSigned, 60);
+      var r = req.signRequests[0];
+      u2f.sign(r.appId, r.challenge, req.signRequests, u2fSigned, 60);
     });
   }
 
