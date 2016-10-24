@@ -127,30 +127,6 @@ func (vk *VirtualKey) GenerateRegistrationSig(appId string, clientData []byte, k
         fmt.Println(err)
     }
 
-    cert, err := x509.ParseCertificate(vk.attestationCertBytes)
-    if err != nil {
-        fmt.Println("Error parsing cert")
-        fmt.Println(err)
-    }
-
-    sig := new (dsaSignature)
-    _, err = asn1.Unmarshal(asnSig, sig)
-    if err != nil {
-        fmt.Println("Error decoding signature")
-        fmt.Println(err)
-    }
-
-    valid := ecdsa.Verify(&privateKey.PublicKey, digest[:], sig.R, sig.S)
-    if !valid {
-        fmt.Println("Error validating signature with key")
-    }
-
-    err = cert.CheckSignature(x509.ECDSAWithSHA256, digest[:], asnSig)
-    if err != nil {
-        fmt.Println("Error validating signature with cert")
-        fmt.Println(err)
-    }
-
     return asnSig;
 }
 
