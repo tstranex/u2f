@@ -108,11 +108,18 @@ func (vk *VirtualKey) GenerateRegistrationSig(appId string, clientData []byte, k
 
     digest := sha256.Sum256([]byte(appId))
 
-    sig, err := privateKey.Sign(rand.Reader, digest[:], nil)
+    r, s, err := ecdsa.Sign(rand.Reader, privateKey, digest[:])
     if err != nil {
         fmt.Println("Error generating signature")
         fmt.Println(err)
     }
+
+    params := privateKey.Curve.Params()
+    curveOrderByteSize := params.P.BitLen() / 8
+    rBytes, sBytes := r.Bytes(), s.Bytes()
+    sig := make([]byte, curveOrderByteSize*2)
+    copy(sig[curveOrderByteSize-len(rBytes):], rBytes)
+    copy(sig[curveOrderByteSize*2-len(sBytes):], sBytes)
 
     cert, err := x509.ParseCertificate(vk.attestationCertBytes)
     if err != nil {
@@ -120,9 +127,7 @@ func (vk *VirtualKey) GenerateRegistrationSig(appId string, clientData []byte, k
         fmt.Println(err)
     }
 
-    curveOrderByteSize := privateKey.PublicKey.Curve.Params().P.BitLen() / 8
-
-    r, s := new(big.Int), new(big.Int)
+    r, s = new(big.Int), new(big.Int)
     r.SetBytes(sig[:curveOrderByteSize])
     s.SetBytes(sig[curveOrderByteSize:])
 
