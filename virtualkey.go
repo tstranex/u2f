@@ -9,6 +9,7 @@ import (
     "crypto/sha256"
     "crypto/x509"
     "encoding/json"
+    "encoding/asn1"
     "time"
     "fmt"
     "crypto/rand"
@@ -102,11 +103,15 @@ func (vk *VirtualKey) GetMessageToSign(appId string, clientData []byte, keyHandl
     return buf
 }
 
+type dsaSignature struct {
+    R, S *big.Int
+}
+
 func (vk *VirtualKey) GenerateRegistrationSig(appId string, clientData []byte, keyHandle string, publicKey *ecdsa.PublicKey, privateKey *ecdsa.PrivateKey) []byte {
 
     buf := vk.GetMessageToSign(appId, clientData, keyHandle, publicKey)
 
-    digest := sha256.Sum256([]byte(appId))
+    digest := sha256.Sum256([]byte(buf))
 
     r, s, err := ecdsa.Sign(rand.Reader, privateKey, digest[:])
     if err != nil {
@@ -114,12 +119,13 @@ func (vk *VirtualKey) GenerateRegistrationSig(appId string, clientData []byte, k
         fmt.Println(err)
     }
 
-    params := privateKey.Curve.Params()
-    curveOrderByteSize := params.P.BitLen() / 8
-    rBytes, sBytes := r.Bytes(), s.Bytes()
-    sig := make([]byte, curveOrderByteSize*2)
-    copy(sig[curveOrderByteSize-len(rBytes):], rBytes)
-    copy(sig[curveOrderByteSize*2-len(sBytes):], sBytes)
+    dsaSig := dsaSignature { R: r, S: s}
+
+    asnSig, err := asn1.Marshal(dsaSig)
+    if err != nil {
+        fmt.Println("Error encoding signature")
+        fmt.Println(err)
+    }
 
     cert, err := x509.ParseCertificate(vk.attestationCertBytes)
     if err != nil {
@@ -127,22 +133,25 @@ func (vk *VirtualKey) GenerateRegistrationSig(appId string, clientData []byte, k
         fmt.Println(err)
     }
 
-    r, s = new(big.Int), new(big.Int)
-    r.SetBytes(sig[:curveOrderByteSize])
-    s.SetBytes(sig[curveOrderByteSize:])
+    sig := new (dsaSignature)
+    _, err = asn1.Unmarshal(asnSig, sig)
+    if err != nil {
+        fmt.Println("Error decoding signature")
+        fmt.Println(err)
+    }
 
-    valid := ecdsa.Verify(&privateKey.PublicKey, digest[:], r, s)
+    valid := ecdsa.Verify(&privateKey.PublicKey, digest[:], sig.R, sig.S)
     if !valid {
         fmt.Println("Error validating signature with key")
     }
 
-    err = cert.CheckSignature(x509.ECDSAWithSHA256, buf, sig)
+    err = cert.CheckSignature(x509.ECDSAWithSHA256, digest[:], asnSig)
     if err != nil {
         fmt.Println("Error validating signature with cert")
         fmt.Println(err)
     }
 
-    return sig;
+    return asnSig;
 }
 
 func (vk *VirtualKey) HandleRegisterRequest(req RegisterRequest) (*RegisterResponse, error) {
