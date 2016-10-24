@@ -68,6 +68,8 @@ func (vk *VirtualKey) GenerateCert(privateKey *ecdsa.PrivateKey) []byte {
     template.NotBefore = time.Now()
     template.NotAfter = time.Now().Add(365*24*time.Hour)
 
+    template.SignatureAlgorithm = x509.ECDSAWithSHA256
+
     derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, getPublicKey(privateKey), privateKey)
     if err != nil {
         fmt.Println(err)
@@ -104,7 +106,36 @@ func (vk *VirtualKey) GenerateRegistrationSig(appId string, clientData []byte, k
 
     buf := vk.GetMessageToSign(appId, clientData, keyHandle, publicKey)
 
-    sig, _ := privateKey.Sign(rand.Reader, buf, nil)
+    digest := sha256.Sum256([]byte(appId))
+
+    sig, err := privateKey.Sign(rand.Reader, digest[:], nil)
+    if err != nil {
+        fmt.Println("Error generating signature")
+        fmt.Println(err)
+    }
+
+    cert, err := x509.ParseCertificate(vk.attestationCertBytes)
+    if err != nil {
+        fmt.Println("Error parsing cert")
+        fmt.Println(err)
+    }
+
+    curveOrderByteSize := privateKey.PublicKey.Curve.Params().P.BitLen() / 8
+
+    r, s := new(big.Int), new(big.Int)
+    r.SetBytes(sig[:curveOrderByteSize])
+    s.SetBytes(sig[curveOrderByteSize:])
+
+    valid := ecdsa.Verify(&privateKey.PublicKey, digest[:], r, s)
+    if !valid {
+        fmt.Println("Error validating signature with key")
+    }
+
+    err = cert.CheckSignature(x509.ECDSAWithSHA256, buf, sig)
+    if err != nil {
+        fmt.Println("Error validating signature with cert")
+        fmt.Println(err)
+    }
 
     return sig;
 }
@@ -145,9 +176,10 @@ func (vk *VirtualKey) HandleRegisterRequest(req RegisterRequest) (*RegisterRespo
     buf = append(buf, byte(len(keyHandle)))
     buf = append(buf, []byte(keyHandle)...)
     // X509 cert
-    buf = append(buf, vk.GenerateCert(vk.attestationKey)...)
+    buf = append(buf, vk.attestationCertBytes...)
     // Signature
-    buf = append(buf, vk.GenerateRegistrationSig(req.AppID, cdJson, keyHandle, &publicKey, vk.attestationKey)...)
+    sig := vk.GenerateRegistrationSig(req.AppID, cdJson, keyHandle, &publicKey, vk.attestationKey)
+    buf = append(buf, sig...)
 
     rr.RegistrationData = encodeBase64(buf)
 

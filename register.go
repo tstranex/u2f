@@ -58,35 +58,29 @@ func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration
 		return nil, errors.New("u2f: challenge has expired")
 	}
 
-	fmt.Println("1")
 	regData, err := decodeBase64(resp.RegistrationData)
 	if err != nil {
 		return nil, err
 	}
 
-fmt.Println("2")
 	clientData, err := decodeBase64(resp.ClientData)
 	if err != nil {
 		return nil, err
 	}
 
-fmt.Println("3")
 	reg, sig, err := parseRegistration(regData)
 	if err != nil {
 		return nil, err
 	}
 
-fmt.Println("4")
 	if err := verifyClientData(clientData, c); err != nil {
 		return nil, err
 	}
 
-fmt.Println("5")
 	if err := verifyAttestationCert(*reg, config); err != nil {
 		return nil, err
 	}
 
-fmt.Println("6")
 	if err := verifyRegistrationSignature(*reg, sig, c.AppID, clientData); err != nil {
 		return nil, err
 	}
@@ -180,6 +174,8 @@ func verifyRegistrationSignature(
 	buf = append(buf, r.KeyHandle...)
 	pk := elliptic.Marshal(r.PubKey.Curve, r.PubKey.X, r.PubKey.Y)
 	buf = append(buf, pk...)
+
+	fmt.Printf("here\n")
 
 	return r.AttestationCert.CheckSignature(
 		x509.ECDSAWithSHA256, buf, signature)

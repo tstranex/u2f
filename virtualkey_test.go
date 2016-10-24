@@ -20,10 +20,14 @@ func TestVirtualKey(t *testing.T) {
 
     app_id := "http://localhost"
 
+    fmt.Println("Generating challenge")
+
     // Generate registration request
     c, _ := NewChallenge(app_id, []string{app_id})
     //fmt.Printf("Challenge: %+v\n", c)
     req := c.RegisterRequest()
+
+    fmt.Println("Handle request")
 
     // Pass to virtual token
     resp, err := vk.HandleRegisterRequest(*req)
@@ -31,6 +35,8 @@ func TestVirtualKey(t *testing.T) {
         t.Error(err)
         t.FailNow()
     }
+
+    fmt.Println("Handle response")
 
     // Register virtual token
     reg, err := Register(*resp, *c, &Config{SkipAttestationVerify: true})
