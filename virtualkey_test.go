@@ -7,7 +7,6 @@ package u2f
 
 import (
     "testing"
-    "fmt"
 )
 
 func TestVirtualKey(t *testing.T) {
@@ -20,31 +19,42 @@ func TestVirtualKey(t *testing.T) {
 
     app_id := "http://localhost"
 
-    fmt.Println("Generating challenge")
-
     // Generate registration request
     c, _ := NewChallenge(app_id, []string{app_id})
     //fmt.Printf("Challenge: %+v\n", c)
-    req := c.RegisterRequest()
-
-    fmt.Println("Handle request")
+    registerReq := c.RegisterRequest()
 
     // Pass to virtual token
-    resp, err := vk.HandleRegisterRequest(*req)
+    resp, err := vk.HandleRegisterRequest(*registerReq)
     if err != nil {
         t.Error(err)
         t.FailNow()
     }
-
-    fmt.Println("Handle response")
 
     // Register virtual token
-    reg, err := Register(*resp, *c, &Config{SkipAttestationVerify: true})
+    // Attestation cert is self signed, so skip checking that
+    _, err = Register(*resp, *c, &Config{SkipAttestationVerify: true})
     if err != nil {
         t.Error(err)
         t.FailNow()
     }
 
-    fmt.Println("Registration: %+v\n", reg)
+    // Send authentication request to the browser / token.
+    c, _ := NewChallenge(app_id, []string{app_id})
+    signReq, _ := c.SignRequest(reg)
+
+    // Pass to virtual token
+    signResp, err := vk.HandleSignatureRequest(*signReq)
+    if err != nil {
+        t.Error(err)
+        t.FailNow()
+    }
+
+    // Read response from the browser / token.
+    newCounter, err := reg.Authenticate(signResp, c, 0)
+    if err != nil {
+        t.Error(err)
+        t.FailNow()
+    }
 
 }

@@ -142,7 +142,7 @@ func (vk *VirtualKey) HandleRegisterRequest(req RegisterRequest) (*RegisterRespo
     privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
     publicKey := privateKey.PublicKey
 
-    keyHandle := "testKeyHandle"
+    keyHandle := "vk" + string(len(vk.keys))
 
     rr := RegisterResponse{}
 
@@ -173,6 +173,29 @@ func (vk *VirtualKey) HandleRegisterRequest(req RegisterRequest) (*RegisterRespo
 
     rr.RegistrationData = encodeBase64(buf)
 
+    // Create local key instance
+    keyInst := KeyInst{
+        Generated: time.Now(),
+        AppID: req.AppID,
+        KeyHandle: keyHandle,
+        Private: privateKey,
+        Counter: 0,
+    }
+
+    vk.keys = append(vk.keys, keyInst)
 
     return &rr, nil
 }
+
+func (vk *VirtualKey) HandleSignatureRequest(req SignRequest) (*SignResponse, error) {
+    // Check if a key is already registered
+    k := vk.GetKeyByAppID(req.AppID)
+    if k == nil {
+        return nil, fmt.Errorf("No key registered for AppID: %s", req.AppID)
+    }
+
+
+
+
+}
+

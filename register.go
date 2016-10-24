@@ -13,7 +13,6 @@ import (
 	"encoding/asn1"
 	"errors"
 	"time"
-	"fmt"
 )
 
 // RegisterRequest creates a request to enrol a new token.
@@ -174,8 +173,6 @@ func verifyRegistrationSignature(
 	buf = append(buf, r.KeyHandle...)
 	pk := elliptic.Marshal(r.PubKey.Curve, r.PubKey.X, r.PubKey.Y)
 	buf = append(buf, pk...)
-
-	fmt.Printf("here\n")
 
 	return r.AttestationCert.CheckSignature(
 		x509.ECDSAWithSHA256, buf, signature)
