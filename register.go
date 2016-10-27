@@ -15,6 +15,15 @@ import (
 	"time"
 )
 
+// Convenience message to wrap a U2F Register Request
+// This encompasses the application ID, a number of registration requests,
+// as well as a list of the already registered keys
+type RegisterRequestMessage struct {
+	AppID     string `json:"appId"`
+	RegisterRequests []RegisterRequest
+	RegisteredKeys []RegisteredKey
+}
+
 // getRegisterRequest creates a request from a given challenge
 func (c *Challenge) getRegisterRequest() *RegisterRequest {
 	var rr RegisterRequest
@@ -26,7 +35,7 @@ func (c *Challenge) getRegisterRequest() *RegisterRequest {
 
 // RegisterRequest builds a registration request from a challenge
 // This must be provided with already registered key handles
-func (c *Challenge) RegisterRequest(keyHandles []string) *RegisterRequestMessage {
+func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 	var m RegisterRequestMessage
 
 	// Set the AppID
@@ -40,10 +49,10 @@ func (c *Challenge) RegisterRequest(keyHandles []string) *RegisterRequestMessage
 	m.RegisterRequests = append(m.RegisterRequests, *registerRequest)
 
 	// Add existing keys to request message
-	for _, r := range keyHandles {
+	for _, r := range c.RegisteredKeys {
 		registeredKey := RegisteredKey{
 			Version: u2fVersion, 
-			KeyHandle: encodeBase64([]byte(r))}
+			KeyHandle: encodeBase64([]byte(r.KeyHandle))}
 		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
 	}
 
@@ -57,8 +66,10 @@ type Registration struct {
 	// Raw serialized registration data as received from the token.
 	Raw []byte
 
+	// Data that should be stored
 	KeyHandle []byte
 	PubKey    ecdsa.PublicKey
+	Count 	  uint32
 
 	// AttestationCert can be nil for Authenticate requests.
 	AttestationCert *x509.Certificate
@@ -159,6 +170,8 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 		return nil, nil, err
 	}
 	r.AttestationCert = cert
+
+	r.Count = 0
 
 	return &r, sig, nil
 }

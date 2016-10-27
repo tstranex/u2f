@@ -21,10 +21,7 @@ type SignRequestMessage struct {
 	AppID     string `json:"appId"`
 	Challenge string `json:'challenge'`
 	RegisteredKeys []RegisteredKey
-	registrations  []Registration
-	challenge *Challenge
 }
-
 
 // SignRequest creates a request to initiate an authentication.
 func (c *Challenge) getSignRequest(reg Registration) *SignRequest {
@@ -36,7 +33,7 @@ func (c *Challenge) getSignRequest(reg Registration) *SignRequest {
 	return &sr
 }
 
-func (c *Challenge) SignRequest(registrations []Registration) *SignRequestMessage {
+func (c *Challenge) SignRequest() *SignRequestMessage {
 	var m SignRequestMessage
 
 	// Build public message fields
@@ -44,25 +41,21 @@ func (c *Challenge) SignRequest(registrations []Registration) *SignRequestMessag
 	m.Challenge = encodeBase64(c.Challenge)
 
 	// Add existing keys to request message
-	for _, r := range registrations {
+	for _, r := range c.RegisteredKeys {
 		registeredKey := RegisteredKey{
 			Version: u2fVersion, 
 			KeyHandle: encodeBase64(r.KeyHandle)}
 		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
 	}
 
-	// Save registrations for later checking
-	m.registrations = registrations
-	m.challenge = c
-
 	return &m
 }
 
-func (sr *SignRequestMessage) Authenticate(resp SignResponse, counter uint32) (newCounter uint32, err error) {
-
+// A
+func (c *Challenge) Authenticate(resp SignResponse) (newCounter uint32, err error) {
 	// Find appropriate registration
 	var reg *Registration = nil
-	for _, r := range sr.registrations {
+	for _, r := range c.RegisteredKeys {
 		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
 			reg = &r
 		}
@@ -71,7 +64,7 @@ func (sr *SignRequestMessage) Authenticate(resp SignResponse, counter uint32) (n
 		return 0, errors.New("u2f: wrong key handle")
 	}
 
-	return reg.Authenticate(resp, *sr.challenge, counter)
+	return reg.Authenticate(resp, *c, reg.Count)
 }
 
 // Authenticate validates a SignResponse authentication response.
@@ -101,7 +94,7 @@ func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter ui
 		return 0, err
 	}
 
-	if ar.Counter < counter {
+	if ar.Counter <  counter {
 		return 0, errors.New("u2f: counter not increasing")
 	}
 

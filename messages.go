@@ -86,15 +86,6 @@ type TrustedFacetsEndpoint struct {
 }
 
 
-// Convenience message to wrap a U2F Register Request
-// This encompasses the application ID, a number of registration requests,
-// as well as a list of the already registered keys
-type RegisterRequestMessage struct {
-	AppID     string `json:"appId"`
-	RegisterRequests []RegisterRequest
-	RegisteredKeys []RegisteredKey
-
-}
 
 
 
