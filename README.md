@@ -4,7 +4,7 @@ A server side implemetation of the FIDO U2F specification in GO, based on [tstra
 
 This fork alters the API to simply handle multiple tokens, and to correspond better to the U2F Javascript specification.  
 
-This also includes a virtual token implementation for integration testing.  
+This also includes a virtual token implementation for integration testing, see [virtualkey_test.go](virtualkey_test.go) for an example.  
 
 ## Features
 
@@ -73,7 +73,7 @@ req, _ := c2.SignRequest()
 ...
 ```
 
-### Check Authenticaton
+### Check Authentication
 ```go
 // Read challenge from session
 var c1 u2f.Challenge
@@ -91,6 +91,13 @@ if err != nil {
 ...
 
 ```
+
+### Client side usage
+```js
+u2f.register(req.appId, req.registerRequests, req.registeredKeys, registerCallback, timeout);
+u2f.sign(req.appId, req.challenge, req.registeredKeys, signCallback, timeout);
+```
+See [u2fdemo/main.go](u2fdemo/main.go) for an example.
 
 ## Installation
 
