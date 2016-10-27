@@ -47,6 +47,12 @@ type SignRequest struct {
 	AppID     string `json:"appId"`
 }
 
+// Wrapped authentication request to simplify 
+type AuthenticateRequest struct {
+
+	SignRequests []u2f.SignRequest `json:"signRequests"`
+}
+
 // SignResponse as defined by the FIDO U2F Javascript API.
 type SignResponse struct {
 	KeyHandle     string `json:"keyHandle"`
@@ -68,3 +74,46 @@ type TrustedFacets struct {
 type TrustedFacetsEndpoint struct {
 	TrustedFacets []TrustedFacets `json:"trustedFacets"`
 }
+
+// U2F interface types for simple serialisation
+
+// Generic U2F message struct
+type U2FMessage struct {
+	Type 			string `json:"type"`
+	AppID   		string `json:"appId"`
+	TimeoutSeconds  uint32 `json:"timeoutSeconds"`
+	RequestId 		uint32 `json:"requestId"`
+}
+
+// U2F message type field values
+const U2FMessageSignRequest 		string = "u2f_sign_request"
+const U2FMessageSignResponse 		string = "u2f_sign_response"
+const U2FMessageRegisterRequest 	string = "u2f_register_request"
+const U2FMessageRegisterResponse 	string = "u2f_register_response"
+
+// U2F message transport types
+const U2FTransportBT string = "bt"
+const U2FTransportBLE string = "ble"
+const U2FTransportNFC string = "nfc"
+const U2FTransportUSB string = "usb"
+
+type U2FRegisterRequest struct {
+	Version   string `json:"version"`
+	Challenge string `json:"challenge"`
+}
+
+type U2FRegisteredKey struct {
+	Version    string `json:"version"`
+	KeyHandle  string `json:"keyHandle"`
+	Transports string `json:"transports"`
+	AppID      string `json:"appId"`
+}
+
+type U2FSignRequest struct {
+	U2FMessage
+	Challenge 		 string `json:"challenge"`
+	RegisterRequests []U2FRegisterRequest
+	RegisteredKeys   []U2FRegisteredKey
+}
+
+

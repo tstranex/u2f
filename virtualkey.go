@@ -14,7 +14,6 @@ import (
     "fmt"
     "crypto/rand"
     "math/big"
-
 )
 
 // Key instance attached to an AppID
@@ -50,13 +49,13 @@ func NewVirtualKey() (*VirtualKey, error) {
 
     vk := VirtualKey{}
     vk.attestationKey = privateKey
-    vk.attestationCertBytes = vk.generateCert(privateKey)
+    vk.attestationCertBytes = generateCert(privateKey)
 
     return &vk, nil
 }
 
 // Internal helper to generate certificates
-func (vk *VirtualKey) generateCert(privateKey *ecdsa.PrivateKey) []byte {
+func generateCert(privateKey *ecdsa.PrivateKey) []byte {
     template := x509.Certificate{}
 
     serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
