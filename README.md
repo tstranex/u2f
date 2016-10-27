@@ -14,7 +14,7 @@ This also includes a virtual token implementation for integration testing, see [
 
 ## Usage
 
-Please visit http://godoc.org/github.com/ryankrte/u2f for the full
+Please visit http://godoc.org/github.com/ryankurte/go-u2f for the full
 documentation.
 
 ### Request Enrolment
