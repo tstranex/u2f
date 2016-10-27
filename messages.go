@@ -77,14 +77,6 @@ type TrustedFacetsEndpoint struct {
 
 // U2F interface types for simple serialisation
 
-// Generic U2F message struct
-type U2FMessage struct {
-	Type 			string `json:"type"`
-	AppID   		string `json:"appId"`
-	TimeoutSeconds  uint32 `json:"timeoutSeconds"`
-	RequestId 		uint32 `json:"requestId"`
-}
-
 // U2F message type field values
 const U2FMessageSignRequest 		string = "u2f_sign_request"
 const U2FMessageSignResponse 		string = "u2f_sign_response"
@@ -97,9 +89,23 @@ const U2FTransportBLE string = "ble"
 const U2FTransportNFC string = "nfc"
 const U2FTransportUSB string = "usb"
 
+// Generic U2F message struct
+type U2FMessage struct {
+	Type 			string `json:"type"`
+	AppID   		string `json:"appId"`
+	TimeoutSeconds  uint32 `json:"timeoutSeconds"`
+	RequestId 		uint32 `json:"requestId"`
+}
+
+// Registration request object
 type U2FRegisterRequest struct {
 	Version   string `json:"version"`
 	Challenge string `json:"challenge"`
+}
+
+type U2FRegisterMessage struct {
+	U2FMessage
+	Requests []U2FRegisterRequest
 }
 
 type U2FRegisteredKey struct {
