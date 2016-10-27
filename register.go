@@ -18,7 +18,7 @@ import (
 // Represents U2F Registration Request
 // This message is passed to the browser for registration
 type RegisterRequestMessage struct {
-	AppID     		 string 		   `json:"appId"`
+	AppID            string            `json:"appId"`
 	RegisterRequests []RegisterRequest `json:"registerRequests"`
 	RegisteredKeys   []RegisteredKey   `json:"registeredKeys"`
 }
@@ -29,7 +29,7 @@ type Registration struct {
 	// Data that should be stored
 	KeyHandle []byte
 	PubKey    ecdsa.PublicKey
-	Count 	  uint32
+	Count     uint32
 
 	// AttestationCert can be nil for Authenticate requests.
 	AttestationCert *x509.Certificate
@@ -67,13 +67,13 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 	// Note that this can contain N requests, but we only need one
 	// And to change this would remove the 1-1 challenge/request mapping
 	// which is convenient for now
-	registerRequest := c.getRegisterRequest();
+	registerRequest := c.getRegisterRequest()
 	m.RegisterRequests = append(m.RegisterRequests, *registerRequest)
 
 	// Add existing keys to request message
 	for _, r := range c.RegisteredKeys {
 		registeredKey := RegisteredKey{
-			Version: u2fVersion, 
+			Version:   u2fVersion,
 			KeyHandle: encodeBase64([]byte(r.KeyHandle))}
 		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
 	}

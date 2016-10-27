@@ -113,7 +113,7 @@ type Challenge struct {
 	Timestamp      time.Time
 	AppID          string
 	TrustedFacets  []string
-    RegisteredKeys []Registration
+	RegisteredKeys []Registration
 }
 
 // NewChallenge generates a challenge for the given application, trusted facets, and registered keys
@@ -133,7 +133,7 @@ func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registr
 	c.Timestamp = time.Now()
 	c.AppID = appID
 	c.TrustedFacets = trustedFacets
-    c.RegisteredKeys = registeredKeys
+	c.RegisteredKeys = registeredKeys
 
 	return &c, nil
 }

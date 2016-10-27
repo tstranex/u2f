@@ -10,7 +10,7 @@ import (
 )
 
 // U2F message transport types
-const U2FTransportBT  string = "bt"
+const U2FTransportBT string = "bt"
 const U2FTransportBLE string = "ble"
 const U2FTransportNFC string = "nfc"
 const U2FTransportUSB string = "usb"
@@ -74,8 +74,3 @@ type TrustedFacets struct {
 type TrustedFacetsEndpoint struct {
 	TrustedFacets []TrustedFacets `json:"trustedFacets"`
 }
-
-
-
-
-

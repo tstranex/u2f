@@ -14,15 +14,13 @@ import (
 	"time"
 )
 
-
 // Represents a U2F Signature Request.
 // This message is passed to the browser for authentication
 type SignRequestMessage struct {
-	AppID     	   	string 			`json:"appId"`
-	Challenge 	   	string 			`json:"challenge"`
-	RegisteredKeys 	[]RegisteredKey `json:"registeredKeys"`
+	AppID          string          `json:"appId"`
+	Challenge      string          `json:"challenge"`
+	RegisteredKeys []RegisteredKey `json:"registeredKeys"`
 }
-
 
 // SignRequest creates a request to initiate authentication.
 func (c *Challenge) SignRequest() *SignRequestMessage {
@@ -35,7 +33,7 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 	// Add existing keys to request message
 	for _, r := range c.RegisteredKeys {
 		registeredKey := RegisteredKey{
-			Version: u2fVersion, 
+			Version:   u2fVersion,
 			KeyHandle: encodeBase64(r.KeyHandle)}
 		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
 	}
