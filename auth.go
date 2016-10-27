@@ -15,8 +15,8 @@ import (
 )
 
 
-// Convenience message to wrap a U2F Signature Request
-// This contains a single challenge to be signed by any of the registered keys
+// Represents a U2F Signature Request.
+// This message is passed to the browser for authentication
 type SignRequestMessage struct {
 	AppID     	   	string 			`json:"appId"`
 	Challenge 	   	string 			`json:"challenge"`
@@ -24,7 +24,7 @@ type SignRequestMessage struct {
 }
 
 
-// SignRequest creates a request to initiate an authentication.
+// SignRequest creates a request to initiate authentication.
 func (c *Challenge) SignRequest() *SignRequestMessage {
 	var m SignRequestMessage
 
@@ -43,7 +43,7 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 	return &m
 }
 
-// Authenticate validates a SignResponse authentication response.
+// Authenticate validates a SignResponse authentication response against an particular Challenge.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
 func (c *Challenge) Authenticate(resp SignResponse) (newCounter uint32, err error) {

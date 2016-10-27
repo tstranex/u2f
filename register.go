@@ -15,9 +15,8 @@ import (
 	"time"
 )
 
-// Convenience message to wrap a U2F Register Request
-// This encompasses the application ID, a number of registration requests,
-// as well as a list of the already registered keys
+// Represents U2F Registration Request
+// This message is passed to the browser for registration
 type RegisterRequestMessage struct {
 	AppID     		 string 		   `json:"appId"`
 	RegisterRequests []RegisterRequest `json:"registerRequests"`
@@ -83,7 +82,7 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 	return &m
 }
 
-// Register validates a RegisterResponse message to enrol a new token.
+// Register validates a RegisterResponse message to enrol a new token against the provided challenge
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
 func (c *Challenge) Register(resp RegisterResponse, config *Config) (*Registration, error) {

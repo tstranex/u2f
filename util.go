@@ -116,7 +116,8 @@ type Challenge struct {
     RegisteredKeys []Registration
 }
 
-// NewChallenge generates a challenge for the given application.
+// NewChallenge generates a challenge for the given application, trusted facets, and registered keys
+// This challenge can then be used to generate and validate registration or authorization requests
 func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registration) (*Challenge, error) {
 	challenge := make([]byte, 32)
 	n, err := rand.Read(challenge)
