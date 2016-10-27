@@ -30,7 +30,7 @@ func TestFull(t *testing.T) {
 		t.Error(err)
 	}
 
-	reg, err := Register(regResp, registerChallenge, nil)
+	reg, err := registerChallenge.Register(regResp, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -42,6 +42,7 @@ func TestFull(t *testing.T) {
 		AppID:         appID,
 		TrustedFacets: []string{appID},
 	}
+	authChallenge.RegisteredKeys = append(authChallenge.RegisteredKeys, *reg)
 
 	const signRespJSON = "{\"keyHandle\":\"mZmRK_1ltMrPtNU7qOc5woatIdvXkkNq0wwXEfE3kFHnoITeyPXSO0Y5juzNAiLhEZTqQ40i6uIBqvG4QUnkiw\",\"clientData\":\"eyJ0eXAiOiJuYXZpZ2F0b3IuaWQuZ2V0QXNzZXJ0aW9uIiwiY2hhbGxlbmdlIjoiUHpONlNHaVVhZXlwRXJFM1NDSGVSbGtSeFZ3ZldsR1ZpMzVnZnE2THNkWSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3Q6MzQ4MyIsImNpZF9wdWJrZXkiOiIifQ\",\"signatureData\":\"AQAAAAYwRAIgBuyafOXoc9Q7fARcs2JbCZdtnMzVCyeJC-J-2Im1IBsCIDxkzmvPX9RCY8uts4wM1y4wEX9LmNH2Mz_VFd-JdyGE\"}"
 	var signResp SignResponse
@@ -49,7 +50,7 @@ func TestFull(t *testing.T) {
 		t.Error(err)
 	}
 
-	newCounter, err := reg.Authenticate(signResp, authChallenge, 0)
+	newCounter, err := authChallenge.Authenticate(signResp)
 	if err != nil {
 		t.Error(err)
 	}
@@ -57,7 +58,9 @@ func TestFull(t *testing.T) {
 		t.Errorf("Wrong new counter: %d", newCounter)
 	}
 
-	newCounter, err = reg.Authenticate(signResp, authChallenge, 7)
+	authChallenge.RegisteredKeys[0].Count = 7
+
+	newCounter, err = authChallenge.Authenticate(signResp)
 	if err == nil {
 		t.Errorf("Expected error due to decreasing counter")
 	}

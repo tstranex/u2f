@@ -37,15 +37,15 @@ type ClientData struct {
 type RegisterRequest struct {
 	Version   string `json:"version"`
 	Challenge string `json:"challenge"`
-	AppID     string `json:"appId"`
+	AppID     string `json:"appId,omitempty"`
 }
 
 // RegisteredKey represents a U2F key registered to the account
 type RegisteredKey struct {
 	Version    string `json:"version"`
 	KeyHandle  string `json:"keyHandle"`
-	Transports string `json:"transports"`
-	AppID      string `json:"appId"`
+	Transports string `json:"transports,omitempty"`
+	AppID      string `json:"appId,omitempty"`
 }
 
 // RegisterResponse is the structure returned by the token/u2f implementation

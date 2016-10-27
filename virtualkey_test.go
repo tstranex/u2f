@@ -34,7 +34,7 @@ func TestVirtualKey(t *testing.T) {
 
     // Register virtual token
     // Attestation cert is self signed, so skip checking that
-    reg, err := Register(*resp, *c1, &Config{SkipAttestationVerify: true})
+    reg, err := c1.Register(*resp, &Config{SkipAttestationVerify: true})
     if err != nil {
         t.Error(err)
         t.FailNow()

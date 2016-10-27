@@ -15,16 +15,39 @@ import (
 	"time"
 )
 
+// Registration represents a single enrolment or pairing between an
+// application and a token. The keyHandle, publicKey and usage count must be stored
+type Registration struct {
+	// Data that should be stored
+	KeyHandle []byte
+	PubKey    ecdsa.PublicKey
+	Count 	  uint32
+
+	// AttestationCert can be nil for Authenticate requests.
+	AttestationCert *x509.Certificate
+
+	// Raw serialized registration data as received from the token.
+	raw []byte
+}
+
+type Config struct {
+	// SkipAttestationVerify controls whether the token attestation
+	// certificate should be verified on registration. Ideally it should
+	// always be verified. However, there is currently no public list of
+	// trusted attestation root certificates so it may be necessary to skip.
+	SkipAttestationVerify bool
+}
+
 // Convenience message to wrap a U2F Register Request
 // This encompasses the application ID, a number of registration requests,
 // as well as a list of the already registered keys
 type RegisterRequestMessage struct {
-	AppID     string `json:"appId"`
-	RegisterRequests []RegisterRequest
-	RegisteredKeys []RegisteredKey
+	AppID     		 string 		   `json:"appId"`
+	RegisterRequests []RegisterRequest `json:"registerRequests"`
+	RegisteredKeys   []RegisteredKey   `json:"registeredKeys"`
 }
 
-// getRegisterRequest creates a request from a given challenge
+// getRegisterRequest creates a RegisterRequest from a given challenge
 func (c *Challenge) getRegisterRequest() *RegisterRequest {
 	var rr RegisterRequest
 	rr.Version = u2fVersion
@@ -60,33 +83,10 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 	return &m
 }
 
-// Registration represents a single enrolment or pairing between an
-// application and a token. The keyHandle, publicKey and usage count must be stored
-type Registration struct {
-	// Raw serialized registration data as received from the token.
-	Raw []byte
-
-	// Data that should be stored
-	KeyHandle []byte
-	PubKey    ecdsa.PublicKey
-	Count 	  uint32
-
-	// AttestationCert can be nil for Authenticate requests.
-	AttestationCert *x509.Certificate
-}
-
-type Config struct {
-	// SkipAttestationVerify controls whether the token attestation
-	// certificate should be verified on registration. Ideally it should
-	// always be verified. However, there is currently no public list of
-	// trusted attestation root certificates so it may be necessary to skip.
-	SkipAttestationVerify bool
-}
-
 // Register validates a RegisterResponse message to enrol a new token.
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
-func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration, error) {
+func (c *Challenge) Register(resp RegisterResponse, config *Config) (*Registration, error) {
 	if config == nil {
 		config = &Config{}
 	}
@@ -110,7 +110,7 @@ func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration
 		return nil, err
 	}
 
-	if err := verifyClientData(clientData, c); err != nil {
+	if err := verifyClientData(clientData, *c); err != nil {
 		return nil, err
 	}
 
@@ -131,7 +131,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	}
 
 	var r Registration
-	r.Raw = buf
+	r.raw = buf
 
 	if buf[0] != 0x05 {
 		return nil, nil, errors.New("u2f: invalid reserved byte")
@@ -188,7 +188,7 @@ func (r *Registration) UnmarshalBinary(data []byte) error {
 
 // Implements encoding.BinaryUnmarshaler.
 func (r *Registration) MarshalBinary() ([]byte, error) {
-	return r.Raw, nil
+	return r.raw, nil
 }
 
 func verifyAttestationCert(r Registration, config *Config) error {

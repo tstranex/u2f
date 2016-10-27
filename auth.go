@@ -18,21 +18,13 @@ import (
 // Convenience message to wrap a U2F Signature Request
 // This contains a single challenge to be signed by any of the registered keys
 type SignRequestMessage struct {
-	AppID     string `json:"appId"`
-	Challenge string `json:'challenge'`
-	RegisteredKeys []RegisteredKey
+	AppID     	   	string 			`json:"appId"`
+	Challenge 	   	string 			`json:"challenge"`
+	RegisteredKeys 	[]RegisteredKey `json:"registeredKeys"`
 }
+
 
 // SignRequest creates a request to initiate an authentication.
-func (c *Challenge) getSignRequest(reg Registration) *SignRequest {
-	var sr SignRequest
-	sr.Version = u2fVersion
-	sr.KeyHandle = encodeBase64(reg.KeyHandle)
-	sr.AppID = c.AppID
-	sr.Challenge = encodeBase64(c.Challenge)
-	return &sr
-}
-
 func (c *Challenge) SignRequest() *SignRequestMessage {
 	var m SignRequestMessage
 
@@ -51,8 +43,14 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 	return &m
 }
 
-// A
+// Authenticate validates a SignResponse authentication response.
+// An error is returned if any part of the response fails to validate.
+// The latest counter value is returned, which the caller should store.
 func (c *Challenge) Authenticate(resp SignResponse) (newCounter uint32, err error) {
+	if time.Now().Sub(c.Timestamp) > timeout {
+		return 0, errors.New("u2f: challenge has expired")
+	}
+
 	// Find appropriate registration
 	var reg *Registration = nil
 	for _, r := range c.RegisteredKeys {
@@ -61,21 +59,6 @@ func (c *Challenge) Authenticate(resp SignResponse) (newCounter uint32, err erro
 		}
 	}
 	if reg == nil {
-		return 0, errors.New("u2f: wrong key handle")
-	}
-
-	return reg.Authenticate(resp, *c, reg.Count)
-}
-
-// Authenticate validates a SignResponse authentication response.
-// An error is returned if any part of the response fails to validate.
-// The latest counter value is returned, which the caller should store.
-func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter uint32) (newCounter uint32, err error) {
-	if time.Now().Sub(c.Timestamp) > timeout {
-		return 0, errors.New("u2f: challenge has expired")
-	}
-
-	if resp.KeyHandle != encodeBase64(reg.KeyHandle) {
 		return 0, errors.New("u2f: wrong key handle")
 	}
 
@@ -94,11 +77,11 @@ func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter ui
 		return 0, err
 	}
 
-	if ar.Counter <  counter {
+	if ar.Counter < reg.Count {
 		return 0, errors.New("u2f: counter not increasing")
 	}
 
-	if err := verifyClientData(clientData, c); err != nil {
+	if err := verifyClientData(clientData, *c); err != nil {
 		return 0, err
 	}
 

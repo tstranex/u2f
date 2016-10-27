@@ -79,7 +79,7 @@ func TestSerialize(t *testing.T) {
 		t.Errorf("UnmarshalBinary error: %v", err)
 	}
 
-	if bytes.Compare(reg.Raw, reg2.Raw) != 0 {
+	if bytes.Compare(reg.raw, reg2.raw) != 0 {
 		t.Errorf("reg.Raw differs")
 	}
 	if bytes.Compare(reg.KeyHandle, reg2.KeyHandle) != 0 {
