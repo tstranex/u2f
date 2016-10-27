@@ -9,9 +9,8 @@ import (
 	"encoding/json"
 )
 
-
 // U2F message transport types
-const U2FTransportBT string = "bt"
+const U2FTransportBT  string = "bt"
 const U2FTransportBLE string = "ble"
 const U2FTransportNFC string = "nfc"
 const U2FTransportUSB string = "usb"
@@ -52,15 +51,6 @@ type RegisteredKey struct {
 type RegisterResponse struct {
 	RegistrationData string `json:"registrationData"`
 	ClientData       string `json:"clientData"`
-}
-
-
-// SignRequest as defined by the FIDO U2F Javascript API.
-type SignRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-	KeyHandle string `json:"keyHandle"`
-	AppID     string `json:"appId"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.
