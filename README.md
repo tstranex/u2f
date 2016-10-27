@@ -1,15 +1,15 @@
 # Go FIDO U2F Library
 
-A server side implemetation of the FIDO U2F specification in GO, based on [tstranex/u2f](https://github.com/tstranex/u2f).  
+A server side implementation of the FIDO U2F specification in GO, based on [tstranex/u2f](https://github.com/tstranex/u2f).  
 
-This fork alters the API to simply handle multiple tokens, and to correspond better to the U2F Javascript specification.  
+This fork alters the API to simply handle multiple tokens, and to correspond better to the U2F JavaScript specification.  
 
 This also includes a virtual token implementation for integration testing, see [virtualkey_test.go](virtualkey_test.go) for an example.  
 
 ## Features
 
 - Native Go implementation
-- No dependancies other than the Go standard library
+- No dependencies other than the Go standard library
 - Token attestation certificate verification
 
 ## Usage
