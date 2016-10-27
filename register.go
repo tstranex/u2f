@@ -15,6 +15,15 @@ import (
 	"time"
 )
 
+// Convenience message to wrap a U2F Register Request
+// This encompasses the application ID, a number of registration requests,
+// as well as a list of the already registered keys
+type RegisterRequestMessage struct {
+	AppID     		 string 		   `json:"appId"`
+	RegisterRequests []RegisterRequest `json:"registerRequests"`
+	RegisteredKeys   []RegisteredKey   `json:"registeredKeys"`
+}
+
 // Registration represents a single enrolment or pairing between an
 // application and a token. The keyHandle, publicKey and usage count must be stored
 type Registration struct {
@@ -36,15 +45,6 @@ type Config struct {
 	// always be verified. However, there is currently no public list of
 	// trusted attestation root certificates so it may be necessary to skip.
 	SkipAttestationVerify bool
-}
-
-// Convenience message to wrap a U2F Register Request
-// This encompasses the application ID, a number of registration requests,
-// as well as a list of the already registered keys
-type RegisterRequestMessage struct {
-	AppID     		 string 		   `json:"appId"`
-	RegisterRequests []RegisterRequest `json:"registerRequests"`
-	RegisteredKeys   []RegisteredKey   `json:"registeredKeys"`
 }
 
 // getRegisterRequest creates a RegisterRequest from a given challenge
