@@ -7,42 +7,79 @@
 Package u2f implements the server-side parts of the
 FIDO Universal 2nd Factor (U2F) specification.
 
-Applications will usually persist Challenge and Registration objects in a
-database.
+Applications will need to persist Challenge and Registration objects.
 
-To enrol a new token:
+Request Enrolment
+    // Fetch registration entries from the database
+    var registeredKeys []u2f.Registration
 
     app_id := "http://localhost"
-    c, _ := NewChallenge(app_id, []string{app_id})
-    req, _ := c.RegisterRequest()
-    // Send the request to the browser.
-    var resp RegisterResponse
-    // Read resp from the browser.
-    reg, err := Register(resp, c)
+
+    // Generate registration request
+    c1, _ := u2f.NewChallenge(app_id, []string{app_id}, registeredKeys)
+    req, _ := c1.RegisterRequest()
+
+    // Send request to browser
+    ...
+
+    // Save challenge to session
+    ...
+
+Check Enrolment
+    // Read challenge from session
+    var c1 u2f.Challenge
+
+    // Read response from the browser
+    var resp u2f.RegisterResponse
+
+    // Perform registration
+    reg, err := c1.Register(resp)
     if err != nil {
-         // Registration failed.
+        // Registration failed.
     }
-    // Store reg in the database.
 
-To perform an authentication:
+    // Store registration in the database against a user
+    ...
 
-    var reg Registration
-    // Fetch reg from the database.
-    c, _ := NewChallenge(app_id, []string{app_id})
-    req, _ := c.SignRequest(reg)
-    // Send the request to the browser.
+
+Request Authentication
+    // Fetch registration entries for a user from the database
+    var registeredKeys []Registration
+
+    app_id := "http://localhost"
+
+    // Generate authentication request
+    c2, _ := u2f.NewChallenge(app_id, []string{app_id}, registeredKeys)
+    req, _ := c2.SignRequest()
+
+    // Send request to browser
+    ...
+
+    // Save challenge to session
+    ...
+
+
+Check Authentication
+    // Read challenge from session
+    var c1 u2f.Challenge
+
+    // Read response from the browser
     var resp SignResponse
-    // Read resp from the browser.
-    new_counter, err := reg.Authenticate(resp, c)
+
+    // Perform authentication
+    newCounter, err := c2.Authenticate(resp)
     if err != nil {
         // Authentication failed.
     }
-    reg.Counter = new_counter
-    // Store updated Registration in the database.
+
+    // Store updated use counter in the database
+    ...
+
 
 The FIDO U2F specification can be found here:
 https://fidoalliance.org/specifications/download
 */
+
 package u2f
 
 import (
