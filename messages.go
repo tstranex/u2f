@@ -9,6 +9,13 @@ import (
 	"encoding/json"
 )
 
+
+// U2F message transport types
+const U2FTransportBT string = "bt"
+const U2FTransportBLE string = "ble"
+const U2FTransportNFC string = "nfc"
+const U2FTransportUSB string = "usb"
+
 // JwkKey represents a public key used by a browser for the Channel ID TLS
 // extension.
 type JwkKey struct {
@@ -26,18 +33,27 @@ type ClientData struct {
 	CIDPubKey json.RawMessage `json:"cid_pubkey"`
 }
 
-// RegisterRequest as defined by the FIDO U2F Javascript API.
+// RegisterRequest defines a registration challenge to the token
 type RegisterRequest struct {
 	Version   string `json:"version"`
 	Challenge string `json:"challenge"`
 	AppID     string `json:"appId"`
 }
 
-// RegisterResponse as defined by the FIDO U2F Javascript API.
+// RegisteredKey represents a U2F key registered to the account
+type RegisteredKey struct {
+	Version    string `json:"version"`
+	KeyHandle  string `json:"keyHandle"`
+	Transports string `json:"transports"`
+	AppID      string `json:"appId"`
+}
+
+// RegisterResponse is the structure returned by the token/u2f implementation
 type RegisterResponse struct {
 	RegistrationData string `json:"registrationData"`
 	ClientData       string `json:"clientData"`
 }
+
 
 // SignRequest as defined by the FIDO U2F Javascript API.
 type SignRequest struct {
@@ -45,12 +61,6 @@ type SignRequest struct {
 	Challenge string `json:"challenge"`
 	KeyHandle string `json:"keyHandle"`
 	AppID     string `json:"appId"`
-}
-
-// Wrapped authentication request to simplify 
-type AuthenticateRequest struct {
-
-	SignRequests []u2f.SignRequest `json:"signRequests"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.
@@ -75,51 +85,16 @@ type TrustedFacetsEndpoint struct {
 	TrustedFacets []TrustedFacets `json:"trustedFacets"`
 }
 
-// U2F interface types for simple serialisation
 
-// U2F message type field values
-const U2FMessageSignRequest 		string = "u2f_sign_request"
-const U2FMessageSignResponse 		string = "u2f_sign_response"
-const U2FMessageRegisterRequest 	string = "u2f_register_request"
-const U2FMessageRegisterResponse 	string = "u2f_register_response"
+// Convenience message to wrap a U2F Register Request
+// This encompasses the application ID, a number of registration requests,
+// as well as a list of the already registered keys
+type RegisterRequestMessage struct {
+	AppID     string `json:"appId"`
+	RegisterRequests []RegisterRequest
+	RegisteredKeys []RegisteredKey
 
-// U2F message transport types
-const U2FTransportBT string = "bt"
-const U2FTransportBLE string = "ble"
-const U2FTransportNFC string = "nfc"
-const U2FTransportUSB string = "usb"
-
-// Generic U2F message struct
-type U2FMessage struct {
-	Type 			string `json:"type"`
-	AppID   		string `json:"appId"`
-	TimeoutSeconds  uint32 `json:"timeoutSeconds"`
-	RequestId 		uint32 `json:"requestId"`
 }
 
-// Registration request object
-type U2FRegisterRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-}
-
-type U2FRegisterMessage struct {
-	U2FMessage
-	Requests []U2FRegisterRequest
-}
-
-type U2FRegisteredKey struct {
-	Version    string `json:"version"`
-	KeyHandle  string `json:"keyHandle"`
-	Transports string `json:"transports"`
-	AppID      string `json:"appId"`
-}
-
-type U2FSignRequest struct {
-	U2FMessage
-	Challenge 		 string `json:"challenge"`
-	RegisterRequests []U2FRegisterRequest
-	RegisteredKeys   []U2FRegisteredKey
-}
 
 

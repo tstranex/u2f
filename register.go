@@ -15,8 +15,8 @@ import (
 	"time"
 )
 
-// RegisterRequest creates a request to enrol a new token.
-func (c *Challenge) RegisterRequest() *RegisterRequest {
+// getRegisterRequest creates a request from a given challenge
+func (c *Challenge) getRegisterRequest() *RegisterRequest {
 	var rr RegisterRequest
 	rr.Version = u2fVersion
 	rr.AppID = c.AppID
@@ -24,8 +24,35 @@ func (c *Challenge) RegisterRequest() *RegisterRequest {
 	return &rr
 }
 
+// RegisterRequest builds a registration request from a challenge
+// This must be provided with already registered key handles
+func (c *Challenge) RegisterRequest(keyHandles []string) *RegisterRequestMessage {
+	var m RegisterRequestMessage
+
+	// Set the AppID
+	m.AppID = c.AppID
+
+	// Create a registration request
+	// Note that this can contain N requests, but we only need one
+	// And to change this would remove the 1-1 challenge/request mapping
+	// which is convenient for now
+	registerRequest := c.getRegisterRequest();
+	m.RegisterRequests = append(m.RegisterRequests, *registerRequest)
+
+	// Add existing keys to request message
+	for _, r := range keyHandles {
+		registeredKey := RegisteredKey{
+			Version: u2fVersion, 
+			KeyHandle: encodeBase64([]byte(r))}
+		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
+	}
+
+	// Return request message (for client)
+	return &m
+}
+
 // Registration represents a single enrolment or pairing between an
-// application and a token. This data will typically be stored in a database.
+// application and a token. The keyHandle, publicKey and usage count must be stored
 type Registration struct {
 	// Raw serialized registration data as received from the token.
 	Raw []byte

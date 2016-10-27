@@ -87,6 +87,17 @@ func (vk *VirtualKey) getKeyByAppID(appId string) *KeyInst {
     return nil
 }
 
+// Internal helper to find key by application ID
+func (vk *VirtualKey) getKeyByAppIDAndKeyHandle(appId string, keyHandle string) *KeyInst {
+    for _, v := range vk.keys {
+        if (v.AppID == appId) && (v.KeyHandle == keyHandle) {
+            return &v
+        }
+    }
+
+    return nil
+}
+
 // Internal helper to generate a registration signature
 func (vk *VirtualKey) generateRegistrationSig(appId string, clientData []byte, keyHandle string, publicKey *ecdsa.PublicKey, privateKey *ecdsa.PrivateKey) []byte {
     
@@ -120,26 +131,28 @@ func (vk *VirtualKey) generateRegistrationSig(appId string, clientData []byte, k
 }
 
 // Handle a registration request
-func (vk *VirtualKey) HandleRegisterRequest(req RegisterRequest) (*RegisterResponse, error) {
+func (vk *VirtualKey) HandleRegisterRequest(req RegisterRequestMessage) (*RegisterResponse, error) {
 
     // Check if a key is already registered
-    k := vk.getKeyByAppID(req.AppID)
-    if k != nil {
-        return nil, fmt.Errorf("Key already registered for AppID: %s", req.AppID)
+    for _, k := range req.RegisteredKeys {
+        ki := vk.getKeyByAppIDAndKeyHandle(req.AppID, k.KeyHandle)
+        if ki != nil {
+            return nil, fmt.Errorf("Key already registered for AppID: %s (handle %s)", req.AppID, k.KeyHandle)
+        }
     }
 
     // Generate key components
     privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
     publicKey := privateKey.PublicKey
 
-    keyHandle := "vk-" + string(len(vk.keys))
+    keyHandle := fmt.Sprintf("virtualkey-%d", len(vk.keys))
 
     rr := RegisterResponse{}
 
     // Generate client data
     cd := ClientData{
         Origin: req.AppID,
-        Challenge: req.Challenge,
+        Challenge: req.RegisterRequests[0].Challenge,
     }
 
     cdJson, _ := json.Marshal(cd);
@@ -208,16 +221,27 @@ func (vk *VirtualKey) generateAuthenticationSig(appId string, clientData []byte,
 }
 
 // Handle an authentication request
-func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequest) (*SignResponse, error) {
+func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequestMessage) (*SignResponse, error) {
+    var keyInstance *KeyInst = nil;
+
     // Find the registered key for this service
-    k := vk.getKeyByAppID(req.AppID)
-    if k == nil {
-        return nil, fmt.Errorf("No key registered for AppID: %s", req.AppID)
+    for _, k := range req.RegisteredKeys {
+        kh, _ := decodeBase64(k.KeyHandle)
+        ki := vk.getKeyByAppIDAndKeyHandle(req.AppID, string(kh))
+        if ki != nil {
+
+            keyInstance = ki
+            break
+        }
+    }
+
+    if keyInstance == nil {
+        return nil, fmt.Errorf("Key not found for AppID: %s", req.AppID)
     }
 
     sr := SignResponse{}
 
-    sr.KeyHandle = encodeBase64([]byte(k.KeyHandle))
+    sr.KeyHandle = encodeBase64([]byte(keyInstance.KeyHandle))
 
     // Build client data
     cd := ClientData{
@@ -234,10 +258,10 @@ func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequest) (*SignRespons
     buf = append(buf, 0x01)
     // Use counter
     countBuf := make([]byte, 4)
-    binary.LittleEndian.PutUint32(countBuf, uint32(k.Counter))
+    binary.LittleEndian.PutUint32(countBuf, uint32(keyInstance.Counter))
     buf = append(buf, countBuf...)
 
-    sig := vk.generateAuthenticationSig(req.AppID, cdJson, buf, k.Private)
+    sig := vk.generateAuthenticationSig(req.AppID, cdJson, buf, keyInstance.Private)
     buf = append(buf, sig...)
     
     sr.SignatureData = encodeBase64(buf)

@@ -14,14 +14,64 @@ import (
 	"time"
 )
 
+
+// Convenience message to wrap a U2F Signature Request
+// This contains a single challenge to be signed by any of the registered keys
+type SignRequestMessage struct {
+	AppID     string `json:"appId"`
+	Challenge string `json:'challenge'`
+	RegisteredKeys []RegisteredKey
+	registrations  []Registration
+	challenge *Challenge
+}
+
+
 // SignRequest creates a request to initiate an authentication.
-func (c *Challenge) SignRequest(reg Registration) *SignRequest {
+func (c *Challenge) getSignRequest(reg Registration) *SignRequest {
 	var sr SignRequest
 	sr.Version = u2fVersion
 	sr.KeyHandle = encodeBase64(reg.KeyHandle)
 	sr.AppID = c.AppID
 	sr.Challenge = encodeBase64(c.Challenge)
 	return &sr
+}
+
+func (c *Challenge) SignRequest(registrations []Registration) *SignRequestMessage {
+	var m SignRequestMessage
+
+	// Build public message fields
+	m.AppID = c.AppID
+	m.Challenge = encodeBase64(c.Challenge)
+
+	// Add existing keys to request message
+	for _, r := range registrations {
+		registeredKey := RegisteredKey{
+			Version: u2fVersion, 
+			KeyHandle: encodeBase64(r.KeyHandle)}
+		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
+	}
+
+	// Save registrations for later checking
+	m.registrations = registrations
+	m.challenge = c
+
+	return &m
+}
+
+func (sr *SignRequestMessage) Authenticate(resp SignResponse, counter uint32) (newCounter uint32, err error) {
+
+	// Find appropriate registration
+	var reg *Registration = nil
+	for _, r := range sr.registrations {
+		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
+			reg = &r
+		}
+	}
+	if reg == nil {
+		return 0, errors.New("u2f: wrong key handle")
+	}
+
+	return reg.Authenticate(resp, *sr.challenge, counter)
 }
 
 // Authenticate validates a SignResponse authentication response.
@@ -31,6 +81,7 @@ func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter ui
 	if time.Now().Sub(c.Timestamp) > timeout {
 		return 0, errors.New("u2f: challenge has expired")
 	}
+
 	if resp.KeyHandle != encodeBase64(reg.KeyHandle) {
 		return 0, errors.New("u2f: wrong key handle")
 	}

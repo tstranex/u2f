@@ -21,9 +21,9 @@ func TestVirtualKey(t *testing.T) {
     app_id := "http://localhost"
 
     // Generate registration request
+    var keyHandles []string
     c1, _ := NewChallenge(app_id, []string{app_id})
-    //fmt.Printf("Challenge: %+v\n", c)
-    registerReq := c1.RegisterRequest()
+    registerReq := c1.RegisterRequest(keyHandles)
 
     // Pass to virtual token
     resp, err := vk.HandleRegisterRequest(*registerReq)
@@ -41,8 +41,10 @@ func TestVirtualKey(t *testing.T) {
     }
 
     // Send authentication request to the browser / token.
+    var registrations []Registration
+    registrations = append(registrations, *reg)
     c2, _ := NewChallenge(app_id, []string{app_id})
-    signReq := c2.SignRequest(*reg)
+    signReq := c2.SignRequest(registrations)
 
     // Pass to virtual token
     signResp, err := vk.HandleAuthenticationRequest(*signReq)
@@ -52,7 +54,7 @@ func TestVirtualKey(t *testing.T) {
     }
 
     // Read response from the browser / token.
-    newCounter, err := reg.Authenticate(*signResp, *c2, 0)
+    newCounter, err := signReq.Authenticate(*signResp, 0)
     if err != nil {
         t.Error(err)
         t.FailNow()
