@@ -18,11 +18,11 @@ func TestVirtualKey(t *testing.T) {
         t.FailNow()
     }
 
-    app_id := "http://localhost"
+    var app_id string = "http://localhost"
+    var registrations []Registration
 
     // Generate registration request
-    c1, _ := NewChallenge(app_id, []string{app_id})
-    //fmt.Printf("Challenge: %+v\n", c)
+    c1, _ := NewChallenge(app_id, []string{app_id}, registrations)
     registerReq := c1.RegisterRequest()
 
     // Pass to virtual token
@@ -34,15 +34,17 @@ func TestVirtualKey(t *testing.T) {
 
     // Register virtual token
     // Attestation cert is self signed, so skip checking that
-    reg, err := Register(*resp, *c1, &Config{SkipAttestationVerify: true})
+    reg, err := c1.Register(*resp, &Config{SkipAttestationVerify: true})
     if err != nil {
         t.Error(err)
         t.FailNow()
     }
 
     // Send authentication request to the browser / token.
-    c2, _ := NewChallenge(app_id, []string{app_id})
-    signReq := c2.SignRequest(*reg)
+    
+    registrations = append(registrations, *reg)
+    c2, _ := NewChallenge(app_id, []string{app_id}, registrations)
+    signReq := c2.SignRequest()
 
     // Pass to virtual token
     signResp, err := vk.HandleAuthenticationRequest(*signReq)
@@ -52,7 +54,7 @@ func TestVirtualKey(t *testing.T) {
     }
 
     // Read response from the browser / token.
-    newCounter, err := reg.Authenticate(*signResp, *c2, 0)
+    newCounter, err := c2.Authenticate(*signResp)
     if err != nil {
         t.Error(err)
         t.FailNow()

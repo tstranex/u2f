@@ -15,26 +15,28 @@ import (
 	"time"
 )
 
-// RegisterRequest creates a request to enrol a new token.
-func (c *Challenge) RegisterRequest() *RegisterRequest {
-	var rr RegisterRequest
-	rr.Version = u2fVersion
-	rr.AppID = c.AppID
-	rr.Challenge = encodeBase64(c.Challenge)
-	return &rr
+// Convenience message to wrap a U2F Register Request
+// This encompasses the application ID, a number of registration requests,
+// as well as a list of the already registered keys
+type RegisterRequestMessage struct {
+	AppID     		 string 		   `json:"appId"`
+	RegisterRequests []RegisterRequest `json:"registerRequests"`
+	RegisteredKeys   []RegisteredKey   `json:"registeredKeys"`
 }
 
 // Registration represents a single enrolment or pairing between an
-// application and a token. This data will typically be stored in a database.
+// application and a token. The keyHandle, publicKey and usage count must be stored
 type Registration struct {
-	// Raw serialized registration data as received from the token.
-	Raw []byte
-
+	// Data that should be stored
 	KeyHandle []byte
 	PubKey    ecdsa.PublicKey
+	Count 	  uint32
 
 	// AttestationCert can be nil for Authenticate requests.
 	AttestationCert *x509.Certificate
+
+	// Raw serialized registration data as received from the token.
+	raw []byte
 }
 
 type Config struct {
@@ -45,10 +47,46 @@ type Config struct {
 	SkipAttestationVerify bool
 }
 
+// getRegisterRequest creates a RegisterRequest from a given challenge
+func (c *Challenge) getRegisterRequest() *RegisterRequest {
+	var rr RegisterRequest
+	rr.Version = u2fVersion
+	rr.AppID = c.AppID
+	rr.Challenge = encodeBase64(c.Challenge)
+	return &rr
+}
+
+// RegisterRequest builds a registration request from a challenge
+// This must be provided with already registered key handles
+func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
+	var m RegisterRequestMessage
+
+	// Set the AppID
+	m.AppID = c.AppID
+
+	// Create a registration request
+	// Note that this can contain N requests, but we only need one
+	// And to change this would remove the 1-1 challenge/request mapping
+	// which is convenient for now
+	registerRequest := c.getRegisterRequest();
+	m.RegisterRequests = append(m.RegisterRequests, *registerRequest)
+
+	// Add existing keys to request message
+	for _, r := range c.RegisteredKeys {
+		registeredKey := RegisteredKey{
+			Version: u2fVersion, 
+			KeyHandle: encodeBase64([]byte(r.KeyHandle))}
+		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
+	}
+
+	// Return request message (for client)
+	return &m
+}
+
 // Register validates a RegisterResponse message to enrol a new token.
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
-func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration, error) {
+func (c *Challenge) Register(resp RegisterResponse, config *Config) (*Registration, error) {
 	if config == nil {
 		config = &Config{}
 	}
@@ -72,7 +110,7 @@ func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration
 		return nil, err
 	}
 
-	if err := verifyClientData(clientData, c); err != nil {
+	if err := verifyClientData(clientData, *c); err != nil {
 		return nil, err
 	}
 
@@ -93,7 +131,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	}
 
 	var r Registration
-	r.Raw = buf
+	r.raw = buf
 
 	if buf[0] != 0x05 {
 		return nil, nil, errors.New("u2f: invalid reserved byte")
@@ -133,6 +171,8 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	}
 	r.AttestationCert = cert
 
+	r.Count = 0
+
 	return &r, sig, nil
 }
 
@@ -148,7 +188,7 @@ func (r *Registration) UnmarshalBinary(data []byte) error {
 
 // Implements encoding.BinaryUnmarshaler.
 func (r *Registration) MarshalBinary() ([]byte, error) {
-	return r.Raw, nil
+	return r.raw, nil
 }
 
 func verifyAttestationCert(r Registration, config *Config) error {

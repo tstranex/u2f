@@ -9,6 +9,12 @@ import (
 	"encoding/json"
 )
 
+// U2F message transport types
+const U2FTransportBT  string = "bt"
+const U2FTransportBLE string = "ble"
+const U2FTransportNFC string = "nfc"
+const U2FTransportUSB string = "usb"
+
 // JwkKey represents a public key used by a browser for the Channel ID TLS
 // extension.
 type JwkKey struct {
@@ -26,25 +32,25 @@ type ClientData struct {
 	CIDPubKey json.RawMessage `json:"cid_pubkey"`
 }
 
-// RegisterRequest as defined by the FIDO U2F Javascript API.
+// RegisterRequest defines a registration challenge to the token
 type RegisterRequest struct {
 	Version   string `json:"version"`
 	Challenge string `json:"challenge"`
-	AppID     string `json:"appId"`
+	AppID     string `json:"appId,omitempty"`
 }
 
-// RegisterResponse as defined by the FIDO U2F Javascript API.
+// RegisteredKey represents a U2F key registered to the account
+type RegisteredKey struct {
+	Version    string `json:"version"`
+	KeyHandle  string `json:"keyHandle"`
+	Transports string `json:"transports,omitempty"`
+	AppID      string `json:"appId,omitempty"`
+}
+
+// RegisterResponse is the structure returned by the token/u2f implementation
 type RegisterResponse struct {
 	RegistrationData string `json:"registrationData"`
 	ClientData       string `json:"clientData"`
-}
-
-// SignRequest as defined by the FIDO U2F Javascript API.
-type SignRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-	KeyHandle string `json:"keyHandle"`
-	AppID     string `json:"appId"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.
@@ -68,3 +74,8 @@ type TrustedFacets struct {
 type TrustedFacetsEndpoint struct {
 	TrustedFacets []TrustedFacets `json:"trustedFacets"`
 }
+
+
+
+
+

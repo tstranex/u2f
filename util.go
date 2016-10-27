@@ -73,14 +73,15 @@ func encodeBase64(buf []byte) string {
 // Challenge represents a single transaction between the server and
 // authenticator. This data will typically be stored in a database.
 type Challenge struct {
-	Challenge     []byte
-	Timestamp     time.Time
-	AppID         string
-	TrustedFacets []string
+	Challenge      []byte
+	Timestamp      time.Time
+	AppID          string
+	TrustedFacets  []string
+    RegisteredKeys []Registration
 }
 
 // NewChallenge generates a challenge for the given application.
-func NewChallenge(appID string, trustedFacets []string) (*Challenge, error) {
+func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registration) (*Challenge, error) {
 	challenge := make([]byte, 32)
 	n, err := rand.Read(challenge)
 	if err != nil {
@@ -95,6 +96,8 @@ func NewChallenge(appID string, trustedFacets []string) (*Challenge, error) {
 	c.Timestamp = time.Now()
 	c.AppID = appID
 	c.TrustedFacets = trustedFacets
+    c.RegisteredKeys = registeredKeys
+
 	return &c, nil
 }
 
