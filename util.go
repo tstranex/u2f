@@ -79,7 +79,6 @@ Check Authentication
 The FIDO U2F specification can be found here:
 https://fidoalliance.org/specifications/download
 */
-
 package u2f
 
 import (
