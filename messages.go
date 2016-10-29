@@ -32,21 +32,6 @@ type ClientData struct {
 	CIDPubKey json.RawMessage `json:"cid_pubkey"`
 }
 
-// RegisterRequest defines a registration challenge to the token
-type RegisterRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-	AppID     string `json:"appId,omitempty"`
-}
-
-// RegisteredKey represents a U2F key registered to the account
-type RegisteredKey struct {
-	Version    string `json:"version"`
-	KeyHandle  string `json:"keyHandle"`
-	Transports string `json:"transports,omitempty"`
-	AppID      string `json:"appId,omitempty"`
-}
-
 // RegisterResponse is the structure returned by the token/u2f implementation
 type RegisterResponse struct {
 	RegistrationData string `json:"registrationData"`
@@ -73,4 +58,12 @@ type TrustedFacets struct {
 // It is used as the response for an appId URL endpoint.
 type TrustedFacetsEndpoint struct {
 	TrustedFacets []TrustedFacets `json:"trustedFacets"`
+}
+
+// RegisteredKey represents a U2F key registered to the account
+type registeredKey struct {
+	Version    string `json:"version"`
+	KeyHandle  string `json:"keyHandle"`
+	Transports string `json:"transports,omitempty"`
+	AppID      string `json:"appId,omitempty"`
 }

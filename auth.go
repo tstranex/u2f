@@ -19,7 +19,7 @@ import (
 type SignRequestMessage struct {
 	AppID          string          `json:"appId"`
 	Challenge      string          `json:"challenge"`
-	RegisteredKeys []RegisteredKey `json:"registeredKeys"`
+	RegisteredKeys []registeredKey `json:"registeredKeys"`
 }
 
 // SignRequest creates a request to initiate authentication.
@@ -32,10 +32,10 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 
 	// Add existing keys to request message
 	for _, r := range c.RegisteredKeys {
-		registeredKey := RegisteredKey{
+		key := registeredKey{
 			Version:   u2fVersion,
 			KeyHandle: encodeBase64(r.KeyHandle)}
-		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
+		m.RegisteredKeys = append(m.RegisteredKeys, key)
 	}
 
 	return &m
