@@ -54,12 +54,14 @@ func TestVirtualKey(t *testing.T) {
 	}
 
 	// Read response from the browser / token.
-	newCounter, err := c2.Authenticate(*signResp)
+	authReg, err := c2.Authenticate(*signResp)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
 	}
 
-	fmt.Printf("Counter: %+v\n", newCounter)
+	if(authReg.Counter != 1) {
+		t.Error(fmt.Errorf("Registration count mismatch, expected %d received %d", 1, authReg.Counter))
+	}
 
 }

@@ -82,12 +82,12 @@ var c1 u2f.Challenge
 var resp SignResponse
 
 // Perform authentication
-newCounter, err := c2.Authenticate(resp)
+reg, err := c2.Authenticate(resp)
 if err != nil {
     // Authentication failed.
 }
 
-// Store updated use counter in the database
+// Store updated registration (usage count) in the database
 ...
 
 ```

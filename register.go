@@ -29,7 +29,7 @@ type Registration struct {
 	// Data that should be stored
 	KeyHandle []byte
 	PubKey    ecdsa.PublicKey
-	Count     uint32
+	Counter   uint32
 
 	// AttestationCert can be nil for Authenticate requests.
 	AttestationCert *x509.Certificate
@@ -170,7 +170,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	}
 	r.AttestationCert = cert
 
-	r.Count = 0
+	r.Counter = 0
 
 	return &r, sig, nil
 }

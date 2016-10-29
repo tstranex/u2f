@@ -50,17 +50,17 @@ func TestFull(t *testing.T) {
 		t.Error(err)
 	}
 
-	newCounter, err := authChallenge.Authenticate(signResp)
+	authReg, err := authChallenge.Authenticate(signResp)
 	if err != nil {
 		t.Error(err)
 	}
-	if newCounter != 6 {
-		t.Errorf("Wrong new counter: %d", newCounter)
+	if authReg.Counter != 6 {
+		t.Errorf("Wrong new counter: %d", authReg.Counter)
 	}
 
-	authChallenge.RegisteredKeys[0].Count = 7
+	authChallenge.RegisteredKeys[0].Counter = 7
 
-	newCounter, err = authChallenge.Authenticate(signResp)
+	authReg, err = authChallenge.Authenticate(signResp)
 	if err == nil {
 		t.Errorf("Expected error due to decreasing counter")
 	}

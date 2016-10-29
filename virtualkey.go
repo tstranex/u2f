@@ -239,7 +239,11 @@ func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequestMessage) (*Sign
 
 	sr := SignResponse{}
 
+	// Generate key handle
 	sr.KeyHandle = encodeBase64([]byte(keyInstance.KeyHandle))
+
+	// Increment key usage count
+	keyInstance.Counter = keyInstance.Counter + 1
 
 	// Build client data
 	cd := ClientData{
@@ -256,7 +260,7 @@ func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequestMessage) (*Sign
 	buf = append(buf, 0x01)
 	// Use counter
 	countBuf := make([]byte, 4)
-	binary.LittleEndian.PutUint32(countBuf, uint32(keyInstance.Counter))
+	binary.BigEndian.PutUint32(countBuf, uint32(keyInstance.Counter))
 	buf = append(buf, countBuf...)
 
 	sig := vk.generateAuthenticationSig(req.AppID, cdJson, buf, keyInstance.Private)
