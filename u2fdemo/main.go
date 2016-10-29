@@ -14,10 +14,6 @@ import (
 	u2f "github.com/ryankurte/go-u2f"
 )
 
-type authenticateRequest struct {
-	SignRequests []u2f.SignRequest `json:"signRequests"`
-}
-
 const appID = "https://localhost:3483"
 
 var trustedFacets = []string{appID}

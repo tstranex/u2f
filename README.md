@@ -23,6 +23,11 @@ Components working, API subject to change as better interfaces are realised. Sug
 Please visit http://godoc.org/github.com/ryankurte/go-u2f for the full
 documentation.
 
+### Import
+```go
+import u2f "github.com/ryankurte/go-u2f"
+```
+
 ### Request Enrolment
 
 ```go
