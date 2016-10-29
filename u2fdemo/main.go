@@ -11,7 +11,7 @@ import (
 	"log"
 	"net/http"
 
-	u2f "github.com/ryankurte/go-u2f"
+    "github.com/ryankurte/go-u2f"
 )
 
 const appID = "https://localhost:3483"
