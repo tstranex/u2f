@@ -87,7 +87,7 @@ req, _ := c2.SignRequest()
 ### Check Authentication
 ```go
 // Read challenge from session
-var c1 u2f.Challenge
+var c2 u2f.Challenge
 
 // Read response from the browser
 var resp SignResponse
@@ -104,6 +104,9 @@ if err != nil {
 ```
 
 ### Client side usage
+
+The u2f.RegisterRequestMessage and u2f.SignRequestMessage structures are directly serialisable, giving the following:
+
 ```js
 u2f.register(req.appId, req.registerRequests, req.registeredKeys, registerCallback, timeout);
 u2f.sign(req.appId, req.challenge, req.registeredKeys, signCallback, timeout);
