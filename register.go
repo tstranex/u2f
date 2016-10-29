@@ -19,8 +19,8 @@ import (
 // This message is passed to the browser for registration
 type RegisterRequestMessage struct {
 	AppID            string            `json:"appId"`
-	RegisterRequests []RegisterRequest `json:"registerRequests"`
-	RegisteredKeys   []RegisteredKey   `json:"registeredKeys"`
+	RegisterRequests []registerRequest `json:"registerRequests"`
+	RegisteredKeys   []registeredKey   `json:"registeredKeys"`
 }
 
 // Registration represents a single enrolment or pairing between an
@@ -29,7 +29,7 @@ type Registration struct {
 	// Data that should be stored
 	KeyHandle []byte
 	PubKey    ecdsa.PublicKey
-	Count     uint32
+	Counter   uint32
 
 	// AttestationCert can be nil for Authenticate requests.
 	AttestationCert *x509.Certificate
@@ -38,7 +38,8 @@ type Registration struct {
 	raw []byte
 }
 
-type Config struct {
+// Registration request configuration
+type RegistrationConfig struct {
 	// SkipAttestationVerify controls whether the token attestation
 	// certificate should be verified on registration. Ideally it should
 	// always be verified. However, there is currently no public list of
@@ -46,9 +47,16 @@ type Config struct {
 	SkipAttestationVerify bool
 }
 
+// RegisterRequest defines a registration challenge to the token
+type registerRequest struct {
+	Version   string `json:"version"`
+	Challenge string `json:"challenge"`
+	AppID     string `json:"appId,omitempty"`
+}
+
 // getRegisterRequest creates a RegisterRequest from a given challenge
-func (c *Challenge) getRegisterRequest() *RegisterRequest {
-	var rr RegisterRequest
+func (c *Challenge) getRegisterRequest() *registerRequest {
+	var rr registerRequest
 	rr.Version = u2fVersion
 	rr.AppID = c.AppID
 	rr.Challenge = encodeBase64(c.Challenge)
@@ -72,10 +80,10 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 
 	// Add existing keys to request message
 	for _, r := range c.RegisteredKeys {
-		registeredKey := RegisteredKey{
+		key := registeredKey{
 			Version:   u2fVersion,
 			KeyHandle: encodeBase64([]byte(r.KeyHandle))}
-		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
+		m.RegisteredKeys = append(m.RegisteredKeys, key)
 	}
 
 	// Return request message (for client)
@@ -85,9 +93,9 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 // Register validates a RegisterResponse message to enrol a new token against the provided challenge
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
-func (c *Challenge) Register(resp RegisterResponse, config *Config) (*Registration, error) {
+func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) (*Registration, error) {
 	if config == nil {
-		config = &Config{}
+		config = &RegistrationConfig{}
 	}
 
 	if time.Now().Sub(c.Timestamp) > timeout {
@@ -170,7 +178,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	}
 	r.AttestationCert = cert
 
-	r.Count = 0
+	r.Counter = 0
 
 	return &r, sig, nil
 }
@@ -190,7 +198,7 @@ func (r *Registration) MarshalBinary() ([]byte, error) {
 	return r.raw, nil
 }
 
-func verifyAttestationCert(r Registration, config *Config) error {
+func verifyAttestationCert(r Registration, config *RegistrationConfig) error {
 	if config.SkipAttestationVerify {
 		return nil
 	}

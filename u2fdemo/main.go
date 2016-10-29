@@ -11,12 +11,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ryankurte/u2f"
+    "github.com/ryankurte/go-u2f"
 )
-
-type authenticateRequest struct {
-	SignRequests []u2f.SignRequest `json:"signRequests"`
-}
 
 const appID = "https://localhost:3483"
 
@@ -55,7 +51,7 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reg, err := challenge.Register(regResp, &u2f.Config{SkipAttestationVerify: true})
+	reg, err := challenge.Register(regResp, &u2f.RegistrationConfig{SkipAttestationVerify: true})
 	if err != nil {
 		log.Printf("u2f.Register error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)

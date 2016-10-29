@@ -16,25 +16,25 @@ import (
 	"time"
 )
 
-// Key instance attached to an AppID
-type KeyInst struct {
-	Generated time.Time
-	AppID     string
-	KeyHandle string
-	Private   *ecdsa.PrivateKey
-	Counter   int
-}
-
 // Virtual U2F key
 type VirtualKey struct {
 	attestationKey       *ecdsa.PrivateKey
 	attestationCertBytes []byte
-	keys                 []KeyInst
+	keys                 []keyInst
 }
 
 // Internal type for ASN1 coercion
 type dsaSignature struct {
 	R, S *big.Int
+}
+
+// Key instance attached to an AppID (and keyHandle)
+type keyInst struct {
+	Generated time.Time
+	AppID     string
+	KeyHandle string
+	Private   *ecdsa.PrivateKey
+	Counter   int
 }
 
 // Create a virtual key
@@ -76,7 +76,7 @@ func generateCert(privateKey *ecdsa.PrivateKey) []byte {
 }
 
 // Internal helper to find key by application ID
-func (vk *VirtualKey) getKeyByAppID(appId string) *KeyInst {
+func (vk *VirtualKey) getKeyByAppID(appId string) *keyInst {
 	for _, v := range vk.keys {
 		if v.AppID == appId {
 			return &v
@@ -87,7 +87,7 @@ func (vk *VirtualKey) getKeyByAppID(appId string) *KeyInst {
 }
 
 // Internal helper to find key by application ID
-func (vk *VirtualKey) getKeyByAppIDAndKeyHandle(appId string, keyHandle string) *KeyInst {
+func (vk *VirtualKey) getKeyByAppIDAndKeyHandle(appId string, keyHandle string) *keyInst {
 	for _, v := range vk.keys {
 		if (v.AppID == appId) && (v.KeyHandle == keyHandle) {
 			return &v
@@ -175,7 +175,7 @@ func (vk *VirtualKey) HandleRegisterRequest(req RegisterRequestMessage) (*Regist
 	rr.RegistrationData = encodeBase64(buf)
 
 	// Create local key instance
-	keyInst := KeyInst{
+	keyInst := keyInst{
 		Generated: time.Now(),
 		AppID:     req.AppID,
 		KeyHandle: keyHandle,
@@ -220,7 +220,7 @@ func (vk *VirtualKey) generateAuthenticationSig(appId string, clientData []byte,
 
 // Handle an authentication request
 func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequestMessage) (*SignResponse, error) {
-	var keyInstance *KeyInst = nil
+	var keyInstance *keyInst = nil
 
 	// Find the registered key for this service
 	for _, k := range req.RegisteredKeys {
@@ -239,7 +239,11 @@ func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequestMessage) (*Sign
 
 	sr := SignResponse{}
 
+	// Generate key handle
 	sr.KeyHandle = encodeBase64([]byte(keyInstance.KeyHandle))
+
+	// Increment key usage count
+	keyInstance.Counter = keyInstance.Counter + 1
 
 	// Build client data
 	cd := ClientData{
@@ -256,7 +260,7 @@ func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequestMessage) (*Sign
 	buf = append(buf, 0x01)
 	// Use counter
 	countBuf := make([]byte, 4)
-	binary.LittleEndian.PutUint32(countBuf, uint32(keyInstance.Counter))
+	binary.BigEndian.PutUint32(countBuf, uint32(keyInstance.Counter))
 	buf = append(buf, countBuf...)
 
 	sig := vk.generateAuthenticationSig(req.AppID, cdJson, buf, keyInstance.Private)

@@ -19,7 +19,7 @@ import (
 type SignRequestMessage struct {
 	AppID          string          `json:"appId"`
 	Challenge      string          `json:"challenge"`
-	RegisteredKeys []RegisteredKey `json:"registeredKeys"`
+	RegisteredKeys []registeredKey `json:"registeredKeys"`
 }
 
 // SignRequest creates a request to initiate authentication.
@@ -32,10 +32,10 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 
 	// Add existing keys to request message
 	for _, r := range c.RegisteredKeys {
-		registeredKey := RegisteredKey{
+		key := registeredKey{
 			Version:   u2fVersion,
 			KeyHandle: encodeBase64(r.KeyHandle)}
-		m.RegisteredKeys = append(m.RegisteredKeys, registeredKey)
+		m.RegisteredKeys = append(m.RegisteredKeys, key)
 	}
 
 	return &m
@@ -44,9 +44,9 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 // Authenticate validates a SignResponse authentication response against an particular Challenge.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
-func (c *Challenge) Authenticate(resp SignResponse) (newCounter uint32, err error) {
+func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	if time.Now().Sub(c.Timestamp) > timeout {
-		return 0, errors.New("u2f: challenge has expired")
+		return nil, errors.New("u2f: challenge has expired")
 	}
 
 	// Find appropriate registration
@@ -57,41 +57,42 @@ func (c *Challenge) Authenticate(resp SignResponse) (newCounter uint32, err erro
 		}
 	}
 	if reg == nil {
-		return 0, errors.New("u2f: wrong key handle")
+		return nil, errors.New("u2f: wrong key handle")
 	}
 
 	sigData, err := decodeBase64(resp.SignatureData)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	clientData, err := decodeBase64(resp.ClientData)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	ar, err := parseSignResponse(sigData)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	if ar.Counter < reg.Count {
-		return 0, errors.New("u2f: counter not increasing")
+	if ar.Counter < reg.Counter {
+		return nil, errors.New("u2f: counter not increasing")
 	}
+	reg.Counter = ar.Counter
 
 	if err := verifyClientData(clientData, *c); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if err := verifyAuthSignature(*ar, &reg.PubKey, c.AppID, clientData); err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if !ar.UserPresenceVerified {
-		return 0, errors.New("u2f: user was not present")
+		return nil, errors.New("u2f: user was not present")
 	}
 
-	return ar.Counter, nil
+	return reg, nil
 }
 
 type ecdsaSig struct {

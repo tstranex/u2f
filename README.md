@@ -12,6 +12,12 @@ This also includes a virtual token implementation for integration testing, see [
 - No dependencies other than the Go standard library
 - Token attestation certificate verification
 
+## Status
+
+[![Build Status](https://travis-ci.org/ryankurte/go-u2f.svg?branch=master)](https://travis-ci.org/ryankurte/go-u2f)
+
+Components working, API subject to change as better interfaces are realised. Suggest installation with `gopkg.in/ryankurte/go-u2f.v1`.
+
 ## Usage
 
 Please visit http://godoc.org/github.com/ryankurte/go-u2f for the full
@@ -76,23 +82,26 @@ req, _ := c2.SignRequest()
 ### Check Authentication
 ```go
 // Read challenge from session
-var c1 u2f.Challenge
+var c2 u2f.Challenge
 
 // Read response from the browser
 var resp SignResponse
 
 // Perform authentication
-newCounter, err := c2.Authenticate(resp)
+reg, err := c2.Authenticate(resp)
 if err != nil {
     // Authentication failed.
 }
 
-// Store updated use counter in the database
+// Store updated registration (usage count) in the database
 ...
 
 ```
 
 ### Client side usage
+
+The u2f.RegisterRequestMessage and u2f.SignRequestMessage structures are directly serialisable, giving the following:
+
 ```js
 u2f.register(req.appId, req.registerRequests, req.registeredKeys, registerCallback, timeout);
 u2f.sign(req.appId, req.challenge, req.registeredKeys, signCallback, timeout);
@@ -102,7 +111,7 @@ See [u2fdemo/main.go](u2fdemo/main.go) for an example.
 ## Installation
 
 ```
-$ go get github.com/ryankurte/u2f
+$ go get github.com/ryankurte/go-u2f
 ```
 
 ## Example
@@ -110,9 +119,15 @@ $ go get github.com/ryankurte/u2f
 See u2fdemo/main.go for an full example server. To run it:
 
 ```
-$ go install github.com/ryankurte/u2f/u2fdemo
+$ go install github.com/ryankurte/go-u2f/u2fdemo
 $ ./bin/u2fdemo
 ```
+
+Or with from the repository:
+```
+$ go run u2fdemo/*
+```
+
 
 Open https://localhost:3483 in Chrome.
 Ignore the SSL warning (due to the self-signed certificate for localhost).
