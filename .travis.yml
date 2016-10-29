@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - master
+  - tip
 
 script:
   - go test
