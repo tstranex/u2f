@@ -51,7 +51,7 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reg, err := challenge.Register(regResp, &u2f.Config{SkipAttestationVerify: true})
+	reg, err := challenge.Register(regResp, &u2f.RegistrationConfig{SkipAttestationVerify: true})
 	if err != nil {
 		log.Printf("u2f.Register error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
