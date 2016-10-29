@@ -60,7 +60,7 @@ func TestVirtualKey(t *testing.T) {
 		t.FailNow()
 	}
 
-	if(authReg.Counter != 1) {
+	if authReg.Counter != 1 {
 		t.Error(fmt.Errorf("Registration count mismatch, expected %d received %d", 1, authReg.Counter))
 	}
 
