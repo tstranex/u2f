@@ -125,6 +125,12 @@ $ go install github.com/ryankurte/u2f/u2fdemo
 $ ./bin/u2fdemo
 ```
 
+Or with from the repository:
+```
+$ go run u2fdemo/*
+```
+
+
 Open https://localhost:3483 in Chrome.
 Ignore the SSL warning (due to the self-signed certificate for localhost).
 You can then test registering and authenticating using your token.
