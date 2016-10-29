@@ -23,11 +23,6 @@ Components working, API subject to change as better interfaces are realised. Sug
 Please visit http://godoc.org/github.com/ryankurte/go-u2f for the full
 documentation.
 
-### Import
-```go
-import u2f "github.com/ryankurte/go-u2f"
-```
-
 ### Request Enrolment
 
 ```go
@@ -116,7 +111,7 @@ See [u2fdemo/main.go](u2fdemo/main.go) for an example.
 ## Installation
 
 ```
-$ go get github.com/ryankurte/u2f
+$ go get github.com/ryankurte/go-u2f
 ```
 
 ## Example
@@ -124,7 +119,7 @@ $ go get github.com/ryankurte/u2f
 See u2fdemo/main.go for an full example server. To run it:
 
 ```
-$ go install github.com/ryankurte/u2f/u2fdemo
+$ go install github.com/ryankurte/go-u2f/u2fdemo
 $ ./bin/u2fdemo
 ```
 
