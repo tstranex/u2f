@@ -11,7 +11,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ryankurte/u2f"
+	u2f "github.com/ryankurte/go-u2f"
 )
 
 type authenticateRequest struct {
