@@ -12,6 +12,12 @@ This also includes a virtual token implementation for integration testing, see [
 - No dependencies other than the Go standard library
 - Token attestation certificate verification
 
+## Status
+
+[![Build Status](https://travis-ci.org/ryankurte/go-u2f.svg?branch=master)](https://travis-ci.org/ryankurte/go-u2f)
+
+Components working, API subject to change as better interfaces are realised. Suggest installation with `gopkg.in/ryankurte/go-u2f.v1`.
+
 ## Usage
 
 Please visit http://godoc.org/github.com/ryankurte/go-u2f for the full
