@@ -26,9 +26,9 @@ type JwkKey struct {
 
 // ClientData as defined by the FIDO U2F Raw Message Formats specification.
 type ClientData struct {
-	Typ       string          `json:"typ"`
-	Challenge string          `json:"challenge"`
-	Origin    string          `json:"origin"`
+	Typ          string          `json:"typ"`
+	Challenge    string          `json:"challenge"`
+	Origin       string          `json:"origin"`
 	CIDPublicKey json.RawMessage `json:"cid_pubkey"`
 }
 
@@ -90,5 +90,3 @@ type TrustedFacets struct {
 type TrustedFacetsEndpoint struct {
 	TrustedFacets []TrustedFacets `json:"trustedFacets"`
 }
-
-

@@ -14,8 +14,6 @@ import (
 	"time"
 )
 
-
-
 // SignRequest creates a request to initiate authentication.
 func (c *Challenge) SignRequest() *SignRequestMessage {
 	var m SignRequestMessage
@@ -86,8 +84,8 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, errors.New("u2f: user was not present")
 	}
 
-	cleanReg := Registration{}
-	if err := reg.MarsalStruct(cleanReg); err != nil {
+	cleanReg := &Registration{}
+	if err := reg.MarshalStruct(cleanReg); err != nil {
 		return nil, err
 	}
 

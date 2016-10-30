@@ -86,10 +86,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 	"time"
-    "reflect"
-    "fmt"
 )
 
 const u2fVersion = "U2F_V2"
@@ -138,69 +138,68 @@ func verifyClientData(clientData []byte, challenge Challenge) error {
 
 // Helper to set a field of type string
 func reflectSetFieldString(i interface{}, name string, value string) error {
-    r := reflect.ValueOf(i).Elem()
+	r := reflect.ValueOf(i).Elem()
 
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.String {
-        return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
-    if !field.CanSet() {
-        return fmt.Errorf("Cannot set field: %s", name)
-    }
-    field.SetString(value)
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.String {
+		return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
+	if !field.CanSet() {
+		return fmt.Errorf("Cannot set field: %s", name)
+	}
+	field.SetString(value)
 
-    return nil
+	return nil
 }
 
 // Helper to get a field of type string
 func reflectGetFieldString(i interface{}, name string) (string, error) {
-    r := reflect.ValueOf(i).Elem()
+	r := reflect.ValueOf(i).Elem()
 
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return "", fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.String {
-        return "", fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return "", fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.String {
+		return "", fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
 
-    return field.String(), nil
+	return field.String(), nil
 }
 
 // Helper to set a field of type int
 func reflectSetFieldUint(i interface{}, name string, value uint32) error {
-    r := reflect.ValueOf(i).Elem()
+	r := reflect.ValueOf(i).Elem()
 
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.Uint {
-        return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
-    if !field.CanSet() {
-        return fmt.Errorf("Cannot set field: %s", name)
-    }
-    field.SetUint(uint64(value))
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.Uint {
+		return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
+	if !field.CanSet() {
+		return fmt.Errorf("Cannot set field: %s", name)
+	}
+	field.SetUint(uint64(value))
 
-    return nil
+	return nil
 }
 
 // Helper to get a field of type int
 func reflectGetFieldUint(i interface{}, name string) (uint, error) {
-    r := reflect.ValueOf(i).Elem()
+	r := reflect.ValueOf(i).Elem()
 
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return 0, fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.Uint {
-        return 0, fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return 0, fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.Uint {
+		return 0, fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
 
-    return uint(field.Uint()), nil
+	return uint(field.Uint()), nil
 }
-

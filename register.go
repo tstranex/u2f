@@ -98,8 +98,8 @@ func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) 
 		return nil, err
 	}
 
-	cleanReg := Registration{}
-	if err := reg.MarsalStruct(cleanReg); err != nil {
+	cleanReg := &Registration{}
+	if err := reg.MarshalStruct(cleanReg); err != nil {
 		return nil, err
 	}
 
