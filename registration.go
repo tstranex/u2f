@@ -15,10 +15,10 @@ import (
 
 // Registration represents a single enrolment or pairing between an
 // application and a token. The keyHandle, publicKey and usage count must be stored
-type Registration struct {
+type RegistrationRaw struct {
     // Data that should be stored
     KeyHandle []byte
-    PubKey    ecdsa.PublicKey
+    PublicKey ecdsa.PublicKey
     Counter   uint32
 
     // AttestationCert can be nil for Authenticate requests.
@@ -28,8 +28,20 @@ type Registration struct {
     raw []byte
 }
 
+// Clean registration object for use without knowledge
+type RegistratonClean struct {
+    // Raw KeyHandle
+    KeyHandle string
+    // Base64 encoded ASN1 public key
+    PublicKey string
+    // Usage counter
+    Counter uint
+    // Base64 encoded PEM certificate
+    AttestationCert string
+}
+
 // Implements encoding.BinaryMarshaler.
-func (r *Registration) UnmarshalBinary(data []byte) error {
+func (r *RegistrationRaw) UnmarshalBinary(data []byte) error {
     reg, _, err := parseRegistration(data)
     if err != nil {
         return err
@@ -39,12 +51,12 @@ func (r *Registration) UnmarshalBinary(data []byte) error {
 }
 
 // Implements encoding.BinaryUnmarshaler.
-func (r *Registration) MarshalBinary() ([]byte, error) {
+func (r *RegistrationRaw) MarshalBinary() ([]byte, error) {
     return r.raw, nil
 }
 
-
-func (reg *Registration) MarshalStruct(i interface{}) error {
+// Marshals a Registration structure to a provided interface
+func (reg *RegistrationRaw) MarshalStruct(i interface{}) error {
     r := reflect.ValueOf(i).Elem()
 
     // Check the interface is a struct
@@ -57,7 +69,7 @@ func (reg *Registration) MarshalStruct(i interface{}) error {
         return err
     }
 
-    publicKeyString := encodeBase64(elliptic.Marshal(reg.PubKey.Curve, reg.PubKey.X, reg.PubKey.Y))
+    publicKeyString := encodeBase64(elliptic.Marshal(reg.PublicKey.Curve, reg.PublicKey.X, reg.PublicKey.Y))
     err = reflectSetFieldString(i, "PublicKey", publicKeyString)
     if err != nil {
         return err
@@ -77,7 +89,8 @@ func (reg *Registration) MarshalStruct(i interface{}) error {
     return err
 }
 
-func (reg *Registration) UnmarshalStruct(i interface{}) error {
+// Unmarshals a Registration structure from a provided interface
+func (reg *RegistrationRaw) UnmarshalStruct(i interface{}) error {
     r := reflect.ValueOf(i).Elem()
 
     // Check the interface is a struct
@@ -103,8 +116,8 @@ func (reg *Registration) UnmarshalStruct(i interface{}) error {
         return err
     }
 
-    reg.PubKey.X, reg.PubKey.Y = elliptic.Unmarshal(elliptic.P256(), publicKeyDecoded)
-    reg.PubKey.Curve = elliptic.P256()
+    reg.PublicKey.X, reg.PublicKey.Y = elliptic.Unmarshal(elliptic.P256(), publicKeyDecoded)
+    reg.PublicKey.Curve = elliptic.P256()
 
     // Attestation certificate
     certString, err := reflectGetFieldString(i, "Certificate")
@@ -130,68 +143,4 @@ func (reg *Registration) UnmarshalStruct(i interface{}) error {
     reg.Counter = uint32(Counter)
 
     return nil
-}
-
-func reflectSetFieldString(i interface{}, name string, value string) error {
-    r := reflect.ValueOf(i).Elem()
-
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.String {
-        return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
-    if !field.CanSet() {
-        return fmt.Errorf("Cannot set field: %s", name)
-    }
-    field.SetString(value)
-
-    return nil
-}
-
-func reflectGetFieldString(i interface{}, name string) (string, error) {
-    r := reflect.ValueOf(i).Elem()
-
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return "", fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.String {
-        return "", fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
-
-    return field.String(), nil
-}
-
-func reflectSetFieldUint(i interface{}, name string, value uint32) error {
-    r := reflect.ValueOf(i).Elem()
-
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.Uint {
-        return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
-    if !field.CanSet() {
-        return fmt.Errorf("Cannot set field: %s", name)
-    }
-    field.SetUint(uint64(value))
-
-    return nil
-}
-
-func reflectGetFieldUint(i interface{}, name string) (uint, error) {
-    r := reflect.ValueOf(i).Elem()
-
-    field := r.FieldByName(name)
-    if field.Kind() == reflect.Invalid {
-        return 0, fmt.Errorf("Cannot find field: %s", name)
-    }
-    if field.Kind() != reflect.Uint {
-        return 0, fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-    }
-
-    return uint(field.Uint()), nil
 }

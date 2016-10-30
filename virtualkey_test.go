@@ -19,7 +19,7 @@ func TestVirtualKey(t *testing.T) {
 	}
 
 	var app_id string = "http://localhost"
-	var registrations []Registration
+	var registrations []RegistrationRaw
 
 	// Generate registration request
 	c1, _ := NewChallenge(app_id, []string{app_id}, registrations)

@@ -23,15 +23,8 @@ type RegistrationConfig struct {
 	SkipAttestationVerify bool
 }
 
-// RegisterRequest defines a registration challenge to the token
-type registerRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-	AppID     string `json:"appId,omitempty"`
-}
-
 // getRegisterRequest creates a RegisterRequest from a given challenge
-func (c *Challenge) getRegisterRequest() *registerRequest {
+func (c *Challenge) newRegisterRequest() *registerRequest {
 	var rr registerRequest
 	rr.Version = u2fVersion
 	rr.AppID = c.AppID
@@ -51,7 +44,7 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 	// Note that this can contain N requests, but we only need one
 	// And to change this would remove the 1-1 challenge/request mapping
 	// which is convenient for now
-	registerRequest := c.getRegisterRequest()
+	registerRequest := c.newRegisterRequest()
 	m.RegisterRequests = append(m.RegisterRequests, *registerRequest)
 
 	// Add existing keys to request message
@@ -69,7 +62,7 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 // Register validates a RegisterResponse message to enrol a new token against the provided challenge
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
-func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) (*Registration, error) {
+func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) (*RegistrationRaw, error) {
 	if config == nil {
 		config = &RegistrationConfig{}
 	}
@@ -108,12 +101,12 @@ func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) 
 	return reg, nil
 }
 
-func parseRegistration(buf []byte) (*Registration, []byte, error) {
+func parseRegistration(buf []byte) (*RegistrationRaw, []byte, error) {
 	if len(buf) < 1+65+1+1+1 {
 		return nil, nil, errors.New("u2f: data is too short")
 	}
 
-	var r Registration
+	var r RegistrationRaw
 	r.raw = buf
 
 	if buf[0] != 0x05 {
@@ -125,9 +118,9 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	if x == nil {
 		return nil, nil, errors.New("u2f: invalid public key")
 	}
-	r.PubKey.Curve = elliptic.P256()
-	r.PubKey.X = x
-	r.PubKey.Y = y
+	r.PublicKey.Curve = elliptic.P256()
+	r.PublicKey.X = x
+	r.PublicKey.Y = y
 	buf = buf[65:]
 
 	khLen := int(buf[0])
@@ -159,7 +152,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	return &r, sig, nil
 }
 
-func verifyAttestationCert(r Registration, config *RegistrationConfig) error {
+func verifyAttestationCert(r RegistrationRaw, config *RegistrationConfig) error {
 	if config.SkipAttestationVerify {
 		return nil
 	}
@@ -170,7 +163,7 @@ func verifyAttestationCert(r Registration, config *RegistrationConfig) error {
 }
 
 func verifyRegistrationSignature(
-	r Registration, signature []byte, appid string, clientData []byte) error {
+	r RegistrationRaw, signature []byte, appid string, clientData []byte) error {
 
 	appParam := sha256.Sum256([]byte(appid))
 	challenge := sha256.Sum256(clientData)
@@ -179,7 +172,7 @@ func verifyRegistrationSignature(
 	buf = append(buf, appParam[:]...)
 	buf = append(buf, challenge[:]...)
 	buf = append(buf, r.KeyHandle...)
-	pk := elliptic.Marshal(r.PubKey.Curve, r.PubKey.X, r.PubKey.Y)
+	pk := elliptic.Marshal(r.PublicKey.Curve, r.PublicKey.X, r.PublicKey.Y)
 	buf = append(buf, pk...)
 
 	return r.AttestationCert.CheckSignature(

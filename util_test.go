@@ -59,9 +59,9 @@ func TestMarshalUnmarshalRegistration(t *testing.T) {
 	certBytes, _ := hex.DecodeString(fakeCert)
 	cert, _ := x509.ParseCertificate(certBytes)
 
-	reg := &Registration{
+	reg := &RegistrationRaw{
 		KeyHandle: []byte("Fake key handle"),
-		PubKey: privateKey.PublicKey,
+		PublicKey: privateKey.PublicKey,
 		Counter: 7,
 		AttestationCert: cert,
 	}
@@ -70,7 +70,7 @@ func TestMarshalUnmarshalRegistration(t *testing.T) {
 
 	reg.MarshalStruct(&ft)
 
-	reg2 := &Registration{}
+	reg2 := &RegistrationRaw{}
 
 	reg2.UnmarshalStruct(&ft)
 
@@ -78,7 +78,7 @@ func TestMarshalUnmarshalRegistration(t *testing.T) {
 		t.Errorf("KeyHandle mismatch")
 	}
 
-	if !reflect.DeepEqual(reg.PubKey, reg2.PubKey) {
+	if !reflect.DeepEqual(reg.PublicKey, reg2.PublicKey) {
 		t.Errorf("PublicKey mismatch")
 	}
 

@@ -38,13 +38,13 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 // Authenticate validates a SignResponse authentication response against an particular Challenge.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
-func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
+func (c *Challenge) Authenticate(resp SignResponse) (*RegistrationRaw, error) {
 	if time.Now().Sub(c.Timestamp) > timeout {
 		return nil, errors.New("u2f: challenge has expired")
 	}
 
 	// Find appropriate registration
-	var reg *Registration = nil
+	var reg *RegistrationRaw = nil
 	for _, r := range c.RegisteredKeys {
 		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
 			reg = &r
@@ -78,7 +78,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, err
 	}
 
-	if err := verifyAuthSignature(*ar, &reg.PubKey, c.AppID, clientData); err != nil {
+	if err := verifyAuthSignature(*ar, &reg.PublicKey, c.AppID, clientData); err != nil {
 		return nil, err
 	}
 
