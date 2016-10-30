@@ -86,14 +86,34 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"reflect"
 	"strings"
 	"time"
 )
 
 const u2fVersion = "U2F_V2"
 const timeout = 5 * time.Minute
+
+// Errors for external use
+var (
+    // Authentication errors
+    ErrCounterLow = errors.New("u2f: counter not increasing")
+    ErrRandomGen = errors.New("u2f: unable to generate random bytes")
+    ErrUntrustedFacet = errors.New("u2f: untrusted facet id")
+    ErrWrongKeyHandle = errors.New("u2f: wrong key handle")
+    ErrChallengeExpired = errors.New("u2f: challenge has expired")
+    ErrChallengeMismatch = errors.New("u2f: challenge does not match")
+    ErrUserNotPresent = errors.New("u2f: user was not present")
+
+    // Parser errors
+    ErrDataShort = errors.New("u2f: data is too short")
+    ErrTrailingData = errors.New("u2f: trailing data")
+
+    ErrInvalidPresense = errors.New("u2f: invalid user presence byte")
+    ErrInvalidSig = errors.New("u2f: invalid signature")
+    ErrInvalidReservedByte = errors.New("u2f: invalid reserved byte")
+    ErrInvalidPublicKey = errors.New("u2f: invalid public key")
+    ErrInvalidKeyHandle = errors.New("u2f: invalid key handle")
+)
 
 // Decode websafe base64
 func decodeBase64(s string) ([]byte, error) {
@@ -124,82 +144,14 @@ func verifyClientData(clientData []byte, challenge Challenge) error {
 		}
 	}
 	if !foundFacetID {
-		return errors.New("u2f: untrusted facet id")
+		return ErrUntrustedFacet
 	}
 
 	c := encodeBase64(challenge.Challenge)
 	if len(c) != len(cd.Challenge) ||
 		subtle.ConstantTimeCompare([]byte(c), []byte(cd.Challenge)) != 1 {
-		return errors.New("u2f: challenge does not match")
+		return ErrChallengeMismatch
 	}
 
 	return nil
-}
-
-// Helper to set a field of type string
-func reflectSetFieldString(i interface{}, name string, value string) error {
-	r := reflect.ValueOf(i).Elem()
-
-	field := r.FieldByName(name)
-	if field.Kind() == reflect.Invalid {
-		return fmt.Errorf("Cannot find field: %s", name)
-	}
-	if field.Kind() != reflect.String {
-		return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-	}
-	if !field.CanSet() {
-		return fmt.Errorf("Cannot set field: %s", name)
-	}
-	field.SetString(value)
-
-	return nil
-}
-
-// Helper to get a field of type string
-func reflectGetFieldString(i interface{}, name string) (string, error) {
-	r := reflect.ValueOf(i).Elem()
-
-	field := r.FieldByName(name)
-	if field.Kind() == reflect.Invalid {
-		return "", fmt.Errorf("Cannot find field: %s", name)
-	}
-	if field.Kind() != reflect.String {
-		return "", fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-	}
-
-	return field.String(), nil
-}
-
-// Helper to set a field of type int
-func reflectSetFieldUint(i interface{}, name string, value uint32) error {
-	r := reflect.ValueOf(i).Elem()
-
-	field := r.FieldByName(name)
-	if field.Kind() == reflect.Invalid {
-		return fmt.Errorf("Cannot find field: %s", name)
-	}
-	if field.Kind() != reflect.Uint {
-		return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-	}
-	if !field.CanSet() {
-		return fmt.Errorf("Cannot set field: %s", name)
-	}
-	field.SetUint(uint64(value))
-
-	return nil
-}
-
-// Helper to get a field of type int
-func reflectGetFieldUint(i interface{}, name string) (uint, error) {
-	r := reflect.ValueOf(i).Elem()
-
-	field := r.FieldByName(name)
-	if field.Kind() == reflect.Invalid {
-		return 0, fmt.Errorf("Cannot find field: %s", name)
-	}
-	if field.Kind() != reflect.Uint {
-		return 0, fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
-	}
-
-	return uint(field.Uint()), nil
 }
