@@ -14,13 +14,7 @@ import (
 	"time"
 )
 
-// Represents a U2F Signature Request.
-// This message is passed to the browser for authentication
-type SignRequestMessage struct {
-	AppID          string          `json:"appId"`
-	Challenge      string          `json:"challenge"`
-	RegisteredKeys []registeredKey `json:"registeredKeys"`
-}
+
 
 // SignRequest creates a request to initiate authentication.
 func (c *Challenge) SignRequest() *SignRequestMessage {

@@ -6,7 +6,6 @@
 package u2f
 
 import (
-	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/x509"
@@ -14,29 +13,6 @@ import (
 	"errors"
 	"time"
 )
-
-// Represents U2F Registration Request
-// This message is passed to the browser for registration
-type RegisterRequestMessage struct {
-	AppID            string            `json:"appId"`
-	RegisterRequests []registerRequest `json:"registerRequests"`
-	RegisteredKeys   []registeredKey   `json:"registeredKeys"`
-}
-
-// Registration represents a single enrolment or pairing between an
-// application and a token. The keyHandle, publicKey and usage count must be stored
-type Registration struct {
-	// Data that should be stored
-	KeyHandle []byte
-	PubKey    ecdsa.PublicKey
-	Counter   uint32
-
-	// AttestationCert can be nil for Authenticate requests.
-	AttestationCert *x509.Certificate
-
-	// Raw serialized registration data as received from the token.
-	raw []byte
-}
 
 // Registration request configuration
 type RegistrationConfig struct {
@@ -181,21 +157,6 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	r.Counter = 0
 
 	return &r, sig, nil
-}
-
-// Implements encoding.BinaryMarshaler.
-func (r *Registration) UnmarshalBinary(data []byte) error {
-	reg, _, err := parseRegistration(data)
-	if err != nil {
-		return err
-	}
-	*r = *reg
-	return nil
-}
-
-// Implements encoding.BinaryUnmarshaler.
-func (r *Registration) MarshalBinary() ([]byte, error) {
-	return r.raw, nil
 }
 
 func verifyAttestationCert(r Registration, config *RegistrationConfig) error {

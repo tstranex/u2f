@@ -32,10 +32,26 @@ type ClientData struct {
 	CIDPubKey json.RawMessage `json:"cid_pubkey"`
 }
 
+// Represents U2F Registration Request
+// This message is passed to the browser for registration
+type RegisterRequestMessage struct {
+	AppID            string            `json:"appId"`
+	RegisterRequests []registerRequest `json:"registerRequests"`
+	RegisteredKeys   []registeredKey   `json:"registeredKeys"`
+}
+
 // RegisterResponse is the structure returned by the token/u2f implementation
 type RegisterResponse struct {
 	RegistrationData string `json:"registrationData"`
 	ClientData       string `json:"clientData"`
+}
+
+// Represents a U2F Signature Request.
+// This message is passed to the browser for authentication
+type SignRequestMessage struct {
+	AppID          string          `json:"appId"`
+	Challenge      string          `json:"challenge"`
+	RegisteredKeys []registeredKey `json:"registeredKeys"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.
