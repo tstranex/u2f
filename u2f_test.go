@@ -43,7 +43,7 @@ func TestFull(t *testing.T) {
 		TrustedFacets: []string{appID},
 	}
 
-	rawReg := &RegistrationRaw{}
+	rawReg := &registrationRaw{}
 	rawReg.FromRegistration(*reg)
 
 	authChallenge.RegisteredKeys = append(authChallenge.RegisteredKeys, *rawReg)

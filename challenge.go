@@ -13,7 +13,7 @@ type Challenge struct {
 	Timestamp      time.Time
 	AppID          string
 	TrustedFacets  []string
-	RegisteredKeys []RegistrationRaw
+	RegisteredKeys []registrationRaw
 }
 
 // NewChallenge generates a challenge for the given application, trusted facets, and registered keys
@@ -28,10 +28,10 @@ func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registr
 		return nil, errors.New("u2f: unable to generate random bytes")
 	}
 
-	rawKeys := []RegistrationRaw{}
+	rawKeys := []registrationRaw{}
 
 	for _, v := range registeredKeys {
-		rawKey := RegistrationRaw{}
+		rawKey := registrationRaw{}
 		rawKey.FromRegistration(v)
 		rawKeys = append(rawKeys, rawKey)
 	}

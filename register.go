@@ -98,20 +98,16 @@ func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) 
 		return nil, err
 	}
 
-	cleanReg := &Registration{}
-	if err := reg.MarshalStruct(cleanReg); err != nil {
-		return nil, err
-	}
-
+	cleanReg := reg.ToRegistration()
 	return cleanReg, nil
 }
 
-func parseRegistration(buf []byte) (*RegistrationRaw, []byte, error) {
+func parseRegistration(buf []byte) (*registrationRaw, []byte, error) {
 	if len(buf) < 1+65+1+1+1 {
 		return nil, nil, errors.New("u2f: data is too short")
 	}
 
-	var r RegistrationRaw
+	var r registrationRaw
 	r.raw = buf
 
 	if buf[0] != 0x05 {
@@ -157,7 +153,7 @@ func parseRegistration(buf []byte) (*RegistrationRaw, []byte, error) {
 	return &r, sig, nil
 }
 
-func verifyAttestationCert(r RegistrationRaw, config *RegistrationConfig) error {
+func verifyAttestationCert(r registrationRaw, config *RegistrationConfig) error {
 	if config.SkipAttestationVerify {
 		return nil
 	}
@@ -168,7 +164,7 @@ func verifyAttestationCert(r RegistrationRaw, config *RegistrationConfig) error 
 }
 
 func verifyRegistrationSignature(
-	r RegistrationRaw, signature []byte, appid string, clientData []byte) error {
+	r registrationRaw, signature []byte, appid string, clientData []byte) error {
 
 	appParam := sha256.Sum256([]byte(appid))
 	challenge := sha256.Sum256(clientData)

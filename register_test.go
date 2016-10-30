@@ -74,7 +74,7 @@ func TestSerialize(t *testing.T) {
 		t.Errorf("MarshalBinary error: %v", err)
 	}
 
-	var reg2 RegistrationRaw
+	var reg2 registrationRaw
 	if err := reg2.UnmarshalBinary(buf); err != nil {
 		t.Errorf("UnmarshalBinary error: %v", err)
 	}

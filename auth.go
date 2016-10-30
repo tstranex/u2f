@@ -42,7 +42,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	}
 
 	// Find appropriate registration
-	var reg *RegistrationRaw = nil
+	var reg *registrationRaw = nil
 	for _, r := range c.RegisteredKeys {
 		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
 			reg = &r
@@ -84,10 +84,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, errors.New("u2f: user was not present")
 	}
 
-	cleanReg := &Registration{}
-	if err := reg.MarshalStruct(cleanReg); err != nil {
-		return nil, err
-	}
+	cleanReg := reg.ToRegistration()
 
 	return cleanReg, nil
 }
