@@ -18,7 +18,7 @@ type Challenge struct {
 
 // NewChallenge generates a challenge for the given application, trusted facets, and registered keys
 // This challenge can then be used to generate and validate registration or authorization requests
-func NewChallenge(appID string, trustedFacets []string, registeredKeys []RegistrationRaw) (*Challenge, error) {
+func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registration) (*Challenge, error) {
     challenge := make([]byte, 32)
     n, err := rand.Read(challenge)
     if err != nil {
@@ -28,12 +28,23 @@ func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registr
         return nil, errors.New("u2f: unable to generate random bytes")
     }
 
+    rawKeys := []RegistrationRaw{}
+
+    for _, v := range registeredKeys {
+        rawKey := RegistrationRaw{}
+        err = rawKey.UnmarshalStruct(v)
+        if err != nil {
+            return nil, err
+        }
+        rawKeys = append(rawKeys, rawKey)
+    }
+
     var c Challenge
     c.Challenge = challenge
     c.Timestamp = time.Now()
     c.AppID = appID
     c.TrustedFacets = trustedFacets
-    c.RegisteredKeys = registeredKeys
+    c.RegisteredKeys = rawKeys
 
     return &c, nil
 }

@@ -62,7 +62,7 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 // Register validates a RegisterResponse message to enrol a new token against the provided challenge
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
-func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) (*RegistrationRaw, error) {
+func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) (*Registration, error) {
 	if config == nil {
 		config = &RegistrationConfig{}
 	}
@@ -98,7 +98,12 @@ func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) 
 		return nil, err
 	}
 
-	return reg, nil
+	cleanReg := Registration{}
+	if err := reg.MarsalStruct(cleanReg); err != nil {
+		return nil, err
+	}
+
+	return cleanReg, nil
 }
 
 func parseRegistration(buf []byte) (*RegistrationRaw, []byte, error) {

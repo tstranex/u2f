@@ -38,7 +38,7 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 // Authenticate validates a SignResponse authentication response against an particular Challenge.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
-func (c *Challenge) Authenticate(resp SignResponse) (*RegistrationRaw, error) {
+func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	if time.Now().Sub(c.Timestamp) > timeout {
 		return nil, errors.New("u2f: challenge has expired")
 	}
@@ -86,7 +86,12 @@ func (c *Challenge) Authenticate(resp SignResponse) (*RegistrationRaw, error) {
 		return nil, errors.New("u2f: user was not present")
 	}
 
-	return reg, nil
+	cleanReg := Registration{}
+	if err := reg.MarsalStruct(cleanReg); err != nil {
+		return nil, err
+	}
+
+	return cleanReg, nil
 }
 
 type ecdsaSig struct {

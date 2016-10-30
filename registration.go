@@ -15,6 +15,18 @@ import (
 
 // Registration represents a single enrolment or pairing between an
 // application and a token. The keyHandle, publicKey and usage count must be stored
+type Registration struct {
+    // Raw KeyHandle
+    KeyHandle string
+    // Base64 encoded ASN1 public key
+    PublicKey string
+    // Usage counter
+    Counter uint
+    // Base64 encoded PEM certificate
+    AttestationCert string
+}
+
+// Raw registration object for internal use
 type RegistrationRaw struct {
     // Data that should be stored
     KeyHandle []byte
@@ -26,18 +38,6 @@ type RegistrationRaw struct {
 
     // Raw serialized registration data as received from the token.
     raw []byte
-}
-
-// Clean registration object for use without knowledge
-type RegistratonClean struct {
-    // Raw KeyHandle
-    KeyHandle string
-    // Base64 encoded ASN1 public key
-    PublicKey string
-    // Usage counter
-    Counter uint
-    // Base64 encoded PEM certificate
-    AttestationCert string
 }
 
 // Implements encoding.BinaryMarshaler.
