@@ -82,11 +82,12 @@ https://fidoalliance.org/specifications/download
 package u2f
 
 import (
-	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -94,6 +95,7 @@ import (
 const u2fVersion = "U2F_V2"
 const timeout = 5 * time.Minute
 
+// Decode websafe base64
 func decodeBase64(s string) ([]byte, error) {
 	for i := 0; i < len(s)%4; i++ {
 		s += "="
@@ -101,43 +103,13 @@ func decodeBase64(s string) ([]byte, error) {
 	return base64.URLEncoding.DecodeString(s)
 }
 
+// Encode websafe base64
 func encodeBase64(buf []byte) string {
 	s := base64.URLEncoding.EncodeToString(buf)
 	return strings.TrimRight(s, "=")
 }
 
-// Challenge represents a single transaction between the server and
-// authenticator. This data will typically be stored in a database.
-type Challenge struct {
-	Challenge      []byte
-	Timestamp      time.Time
-	AppID          string
-	TrustedFacets  []string
-	RegisteredKeys []Registration
-}
-
-// NewChallenge generates a challenge for the given application, trusted facets, and registered keys
-// This challenge can then be used to generate and validate registration or authorization requests
-func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registration) (*Challenge, error) {
-	challenge := make([]byte, 32)
-	n, err := rand.Read(challenge)
-	if err != nil {
-		return nil, err
-	}
-	if n != 32 {
-		return nil, errors.New("u2f: unable to generate random bytes")
-	}
-
-	var c Challenge
-	c.Challenge = challenge
-	c.Timestamp = time.Now()
-	c.AppID = appID
-	c.TrustedFacets = trustedFacets
-	c.RegisteredKeys = registeredKeys
-
-	return &c, nil
-}
-
+// Verify client data object
 func verifyClientData(clientData []byte, challenge Challenge) error {
 	var cd ClientData
 	if err := json.Unmarshal(clientData, &cd); err != nil {
@@ -162,4 +134,72 @@ func verifyClientData(clientData []byte, challenge Challenge) error {
 	}
 
 	return nil
+}
+
+// Helper to set a field of type string
+func reflectSetFieldString(i interface{}, name string, value string) error {
+	r := reflect.ValueOf(i).Elem()
+
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.String {
+		return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
+	if !field.CanSet() {
+		return fmt.Errorf("Cannot set field: %s", name)
+	}
+	field.SetString(value)
+
+	return nil
+}
+
+// Helper to get a field of type string
+func reflectGetFieldString(i interface{}, name string) (string, error) {
+	r := reflect.ValueOf(i).Elem()
+
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return "", fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.String {
+		return "", fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
+
+	return field.String(), nil
+}
+
+// Helper to set a field of type int
+func reflectSetFieldUint(i interface{}, name string, value uint32) error {
+	r := reflect.ValueOf(i).Elem()
+
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.Uint {
+		return fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
+	if !field.CanSet() {
+		return fmt.Errorf("Cannot set field: %s", name)
+	}
+	field.SetUint(uint64(value))
+
+	return nil
+}
+
+// Helper to get a field of type int
+func reflectGetFieldUint(i interface{}, name string) (uint, error) {
+	r := reflect.ValueOf(i).Elem()
+
+	field := r.FieldByName(name)
+	if field.Kind() == reflect.Invalid {
+		return 0, fmt.Errorf("Cannot find field: %s", name)
+	}
+	if field.Kind() != reflect.Uint {
+		return 0, fmt.Errorf("Invalid field type: %s field: %s", field.Kind(), name)
+	}
+
+	return uint(field.Uint()), nil
 }

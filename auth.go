@@ -14,14 +14,6 @@ import (
 	"time"
 )
 
-// Represents a U2F Signature Request.
-// This message is passed to the browser for authentication
-type SignRequestMessage struct {
-	AppID          string          `json:"appId"`
-	Challenge      string          `json:"challenge"`
-	RegisteredKeys []registeredKey `json:"registeredKeys"`
-}
-
 // SignRequest creates a request to initiate authentication.
 func (c *Challenge) SignRequest() *SignRequestMessage {
 	var m SignRequestMessage
@@ -50,7 +42,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	}
 
 	// Find appropriate registration
-	var reg *Registration = nil
+	var reg *registrationRaw = nil
 	for _, r := range c.RegisteredKeys {
 		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
 			reg = &r
@@ -84,7 +76,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, err
 	}
 
-	if err := verifyAuthSignature(*ar, &reg.PubKey, c.AppID, clientData); err != nil {
+	if err := verifyAuthSignature(*ar, &reg.PublicKey, c.AppID, clientData); err != nil {
 		return nil, err
 	}
 
@@ -92,7 +84,9 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, errors.New("u2f: user was not present")
 	}
 
-	return reg, nil
+	cleanReg := reg.ToRegistration()
+
+	return cleanReg, nil
 }
 
 type ecdsaSig struct {

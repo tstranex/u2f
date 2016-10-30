@@ -6,7 +6,6 @@
 package u2f
 
 import (
-	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/x509"
@@ -14,29 +13,6 @@ import (
 	"errors"
 	"time"
 )
-
-// Represents U2F Registration Request
-// This message is passed to the browser for registration
-type RegisterRequestMessage struct {
-	AppID            string            `json:"appId"`
-	RegisterRequests []registerRequest `json:"registerRequests"`
-	RegisteredKeys   []registeredKey   `json:"registeredKeys"`
-}
-
-// Registration represents a single enrolment or pairing between an
-// application and a token. The keyHandle, publicKey and usage count must be stored
-type Registration struct {
-	// Data that should be stored
-	KeyHandle []byte
-	PubKey    ecdsa.PublicKey
-	Counter   uint32
-
-	// AttestationCert can be nil for Authenticate requests.
-	AttestationCert *x509.Certificate
-
-	// Raw serialized registration data as received from the token.
-	raw []byte
-}
 
 // Registration request configuration
 type RegistrationConfig struct {
@@ -47,15 +23,8 @@ type RegistrationConfig struct {
 	SkipAttestationVerify bool
 }
 
-// RegisterRequest defines a registration challenge to the token
-type registerRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-	AppID     string `json:"appId,omitempty"`
-}
-
 // getRegisterRequest creates a RegisterRequest from a given challenge
-func (c *Challenge) getRegisterRequest() *registerRequest {
+func (c *Challenge) newRegisterRequest() *registerRequest {
 	var rr registerRequest
 	rr.Version = u2fVersion
 	rr.AppID = c.AppID
@@ -75,7 +44,7 @@ func (c *Challenge) RegisterRequest() *RegisterRequestMessage {
 	// Note that this can contain N requests, but we only need one
 	// And to change this would remove the 1-1 challenge/request mapping
 	// which is convenient for now
-	registerRequest := c.getRegisterRequest()
+	registerRequest := c.newRegisterRequest()
 	m.RegisterRequests = append(m.RegisterRequests, *registerRequest)
 
 	// Add existing keys to request message
@@ -129,15 +98,16 @@ func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) 
 		return nil, err
 	}
 
-	return reg, nil
+	cleanReg := reg.ToRegistration()
+	return cleanReg, nil
 }
 
-func parseRegistration(buf []byte) (*Registration, []byte, error) {
+func parseRegistration(buf []byte) (*registrationRaw, []byte, error) {
 	if len(buf) < 1+65+1+1+1 {
 		return nil, nil, errors.New("u2f: data is too short")
 	}
 
-	var r Registration
+	var r registrationRaw
 	r.raw = buf
 
 	if buf[0] != 0x05 {
@@ -149,9 +119,9 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	if x == nil {
 		return nil, nil, errors.New("u2f: invalid public key")
 	}
-	r.PubKey.Curve = elliptic.P256()
-	r.PubKey.X = x
-	r.PubKey.Y = y
+	r.PublicKey.Curve = elliptic.P256()
+	r.PublicKey.X = x
+	r.PublicKey.Y = y
 	buf = buf[65:]
 
 	khLen := int(buf[0])
@@ -183,22 +153,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	return &r, sig, nil
 }
 
-// Implements encoding.BinaryMarshaler.
-func (r *Registration) UnmarshalBinary(data []byte) error {
-	reg, _, err := parseRegistration(data)
-	if err != nil {
-		return err
-	}
-	*r = *reg
-	return nil
-}
-
-// Implements encoding.BinaryUnmarshaler.
-func (r *Registration) MarshalBinary() ([]byte, error) {
-	return r.raw, nil
-}
-
-func verifyAttestationCert(r Registration, config *RegistrationConfig) error {
+func verifyAttestationCert(r registrationRaw, config *RegistrationConfig) error {
 	if config.SkipAttestationVerify {
 		return nil
 	}
@@ -209,7 +164,7 @@ func verifyAttestationCert(r Registration, config *RegistrationConfig) error {
 }
 
 func verifyRegistrationSignature(
-	r Registration, signature []byte, appid string, clientData []byte) error {
+	r registrationRaw, signature []byte, appid string, clientData []byte) error {
 
 	appParam := sha256.Sum256([]byte(appid))
 	challenge := sha256.Sum256(clientData)
@@ -218,7 +173,7 @@ func verifyRegistrationSignature(
 	buf = append(buf, appParam[:]...)
 	buf = append(buf, challenge[:]...)
 	buf = append(buf, r.KeyHandle...)
-	pk := elliptic.Marshal(r.PubKey.Curve, r.PubKey.X, r.PubKey.Y)
+	pk := elliptic.Marshal(r.PublicKey.Curve, r.PublicKey.X, r.PublicKey.Y)
 	buf = append(buf, pk...)
 
 	return r.AttestationCert.CheckSignature(

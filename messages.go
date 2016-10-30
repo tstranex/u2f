@@ -26,16 +26,47 @@ type JwkKey struct {
 
 // ClientData as defined by the FIDO U2F Raw Message Formats specification.
 type ClientData struct {
-	Typ       string          `json:"typ"`
-	Challenge string          `json:"challenge"`
-	Origin    string          `json:"origin"`
-	CIDPubKey json.RawMessage `json:"cid_pubkey"`
+	Typ          string          `json:"typ"`
+	Challenge    string          `json:"challenge"`
+	Origin       string          `json:"origin"`
+	CIDPublicKey json.RawMessage `json:"cid_pubkey"`
+}
+
+// RegisterRequest defines a registration challenge to the token
+type registerRequest struct {
+	Version   string `json:"version"`
+	Challenge string `json:"challenge"`
+	AppID     string `json:"appId,omitempty"`
+}
+
+// RegisteredKey represents a U2F key registered to the account
+type registeredKey struct {
+	Version    string `json:"version"`
+	KeyHandle  string `json:"keyHandle"`
+	Transports string `json:"transports,omitempty"`
+	AppID      string `json:"appId,omitempty"`
+}
+
+// Represents U2F Registration Request
+// This message is passed to the browser for registration
+type RegisterRequestMessage struct {
+	AppID            string            `json:"appId"`
+	RegisterRequests []registerRequest `json:"registerRequests"`
+	RegisteredKeys   []registeredKey   `json:"registeredKeys"`
 }
 
 // RegisterResponse is the structure returned by the token/u2f implementation
 type RegisterResponse struct {
 	RegistrationData string `json:"registrationData"`
 	ClientData       string `json:"clientData"`
+}
+
+// Represents a U2F Signature Request.
+// This message is passed to the browser for authentication
+type SignRequestMessage struct {
+	AppID          string          `json:"appId"`
+	Challenge      string          `json:"challenge"`
+	RegisteredKeys []registeredKey `json:"registeredKeys"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.
@@ -58,12 +89,4 @@ type TrustedFacets struct {
 // It is used as the response for an appId URL endpoint.
 type TrustedFacetsEndpoint struct {
 	TrustedFacets []TrustedFacets `json:"trustedFacets"`
-}
-
-// RegisteredKey represents a U2F key registered to the account
-type registeredKey struct {
-	Version    string `json:"version"`
-	KeyHandle  string `json:"keyHandle"`
-	Transports string `json:"transports,omitempty"`
-	AppID      string `json:"appId,omitempty"`
 }
