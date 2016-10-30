@@ -2,7 +2,7 @@
 
 A server side implementation of the FIDO U2F specification in GO, based on [tstranex/u2f](https://github.com/tstranex/u2f).  
 
-This fork alters the API to simply handle multiple tokens, and to correspond better to the U2F JavaScript specification.  
+This fork alters the API to simplify implementation, handle multiple tokens, and to correspond better to the U2F JavaScript specification.  
 
 This also includes a virtual token implementation for integration testing, see [virtualkey_test.go](virtualkey_test.go) for an example.  
 
