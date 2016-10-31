@@ -2,7 +2,6 @@ package u2f
 
 import (
 	"crypto/rand"
-	"errors"
 	"time"
 )
 
@@ -13,7 +12,7 @@ type Challenge struct {
 	Timestamp      time.Time
 	AppID          string
 	TrustedFacets  []string
-	RegisteredKeys []registrationRaw
+	RegisteredKeys []Registration
 }
 
 // NewChallenge generates a challenge for the given application, trusted facets, and registered keys
@@ -25,15 +24,7 @@ func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registr
 		return nil, err
 	}
 	if n != 32 {
-		return nil, errors.New("u2f: unable to generate random bytes")
-	}
-
-	rawKeys := []registrationRaw{}
-
-	for _, v := range registeredKeys {
-		rawKey := registrationRaw{}
-		rawKey.FromRegistration(v)
-		rawKeys = append(rawKeys, rawKey)
+		return nil, ErrRandomGen
 	}
 
 	var c Challenge
@@ -41,7 +32,7 @@ func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registr
 	c.Timestamp = time.Now()
 	c.AppID = appID
 	c.TrustedFacets = trustedFacets
-	c.RegisteredKeys = rawKeys
+	c.RegisteredKeys = registeredKeys
 
 	return &c, nil
 }

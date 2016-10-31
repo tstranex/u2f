@@ -25,7 +25,7 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 	for _, r := range c.RegisteredKeys {
 		key := registeredKey{
 			Version:   u2fVersion,
-			KeyHandle: encodeBase64(r.KeyHandle)}
+			KeyHandle: encodeBase64([]byte(r.KeyHandle))}
 		m.RegisteredKeys = append(m.RegisteredKeys, key)
 	}
 
@@ -40,9 +40,17 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, ErrChallengeExpired
 	}
 
+	// Convert registrations to raw equivalents
+	rawKeys := []registrationRaw{}
+	for _, v := range c.RegisteredKeys {
+		rawKey := registrationRaw{}
+		rawKey.FromRegistration(v)
+		rawKeys = append(rawKeys, rawKey)
+	}
+
 	// Find appropriate registration
 	var reg *registrationRaw = nil
-	for _, r := range c.RegisteredKeys {
+	for _, r := range rawKeys {
 		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
 			reg = &r
 		}
