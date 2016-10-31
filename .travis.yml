@@ -1,11 +1,13 @@
 language: go
-
 go:
-  - 1.7.1
-
+- 1.7.1
 script:
-  - go test
-
+- go test
 notifications:
   email: false
-  
+deploy:
+  provider: releases
+  api_key:
+    secure: v07brAUnmtv2Z1m+zSWudwY7ahjh+y6/nEHeenpUCPw44laPBq1cZl9RjAj8GHcGlazG9iMLymYpO2ZcZTc6xcRZYM6ZywSsiooTCIWKQa3YqolRdBHSA5cFhlAoN26GEwE1EQ5fLd2BdqrdK/xanfDBy9P/DjB4hDZF1ysh4O4IZjDuzmeiqRL7hWUGmEl4c4d2o6oTCNdYU4DaG4uGNHcVyRj34VlzW5S/1+e/a1D7A8xtN5bwmpP0unbqv73lnDp8/lz5P0igLqwN1PZ1tLVQRsa6wN0F8iHJFEzh2ZDYayUj1E9etXmv0k5qQm2x9r9f8SFNt2v9cujP0P3G2XyIuaua6+xkKXorSn1BadsU7th+cWc++7G/Q2qc+92ywBsy6RGR3UCq9NoiD72P3d8DpzRavdcbU1HG6O5O75PDDKDaZkYqsQ/+WTzJO3/c/6tPwJal+Lkqq7G1C6OOiSB/YuusRiuySgjX9dXmdKAT9vPbY0k43aupCTqBhIstAza7YyGTT49DB6SqPcwYAn1ScZoiBnRdTEoRpjkg9yoIyKedTAwfU4k/WQRsY+la+hjAqr8hYSQksl6+iRHjWp8gcvy7Nvf6RoMcoRchP2Y6WeyuCLIce8QnN4Eoo6XOsiVjIZ91gCKgQV32ofIzXJhE/EjLA2zCtR9ICrdEkjU=
+  on:
+    repo: ryankurte/go-u2f
