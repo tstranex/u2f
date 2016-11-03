@@ -9,6 +9,12 @@ import (
 	"encoding/json"
 )
 
+// U2F message transport types
+const U2FTransportBT string = "bt"
+const U2FTransportBLE string = "ble"
+const U2FTransportNFC string = "nfc"
+const U2FTransportUSB string = "usb"
+
 // JwkKey represents a public key used by a browser for the Channel ID TLS
 // extension.
 type JwkKey struct {
@@ -20,31 +26,47 @@ type JwkKey struct {
 
 // ClientData as defined by the FIDO U2F Raw Message Formats specification.
 type ClientData struct {
-	Typ       string          `json:"typ"`
-	Challenge string          `json:"challenge"`
-	Origin    string          `json:"origin"`
-	CIDPubKey json.RawMessage `json:"cid_pubkey"`
+	Typ          string          `json:"typ"`
+	Challenge    string          `json:"challenge"`
+	Origin       string          `json:"origin"`
+	CIDPublicKey json.RawMessage `json:"cid_pubkey"`
 }
 
-// RegisterRequest as defined by the FIDO U2F Javascript API.
-type RegisterRequest struct {
+// RegisterRequest defines a registration challenge to the token
+type registerRequest struct {
 	Version   string `json:"version"`
 	Challenge string `json:"challenge"`
-	AppID     string `json:"appId"`
+	AppID     string `json:"appId,omitempty"`
 }
 
-// RegisterResponse as defined by the FIDO U2F Javascript API.
+// RegisteredKey represents a U2F key registered to the account
+type registeredKey struct {
+	Version    string `json:"version"`
+	KeyHandle  string `json:"keyHandle"`
+	Transports string `json:"transports,omitempty"`
+	AppID      string `json:"appId,omitempty"`
+}
+
+// Represents U2F Registration Request
+// This message is passed to the browser for registration
+type RegisterRequestMessage struct {
+	AppID            string            `json:"appId"`
+	RegisterRequests []registerRequest `json:"registerRequests"`
+	RegisteredKeys   []registeredKey   `json:"registeredKeys"`
+}
+
+// RegisterResponse is the structure returned by the token/u2f implementation
 type RegisterResponse struct {
 	RegistrationData string `json:"registrationData"`
 	ClientData       string `json:"clientData"`
 }
 
-// SignRequest as defined by the FIDO U2F Javascript API.
-type SignRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-	KeyHandle string `json:"keyHandle"`
-	AppID     string `json:"appId"`
+// Represents a U2F Signature Request.
+// This message is passed to the browser for authentication
+type SignRequestMessage struct {
+	AppID          string          `json:"appId"`
+	Challenge      string          `json:"challenge"`
+	RegisteredKeys []registeredKey `json:"registeredKeys"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.

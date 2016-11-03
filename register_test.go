@@ -45,12 +45,12 @@ func TestRegistrationExample(t *testing.T) {
 			actualSig, expectedSig)
 	}
 
-	const expectedPubKey = "04b174bc49c7ca254b70d2e5c207cee9cf174820ebd77ea3c65508c26da51b657c1cc6b952f8621697936482da0a6d3d3826a59095daf6cd7c03e2e60385d2f6d9"
-	actualPubKey := hex.EncodeToString(
-		elliptic.Marshal(r.PubKey.Curve, r.PubKey.X, r.PubKey.Y))
-	if actualPubKey != expectedPubKey {
+	const expectedPublicKey = "04b174bc49c7ca254b70d2e5c207cee9cf174820ebd77ea3c65508c26da51b657c1cc6b952f8621697936482da0a6d3d3826a59095daf6cd7c03e2e60385d2f6d9"
+	actualPublicKey := hex.EncodeToString(
+		elliptic.Marshal(r.PublicKey.Curve, r.PublicKey.X, r.PublicKey.Y))
+	if actualPublicKey != expectedPublicKey {
 		t.Errorf("unexpected pubkey: %s vs %s",
-			actualPubKey, expectedPubKey)
+			actualPublicKey, expectedPublicKey)
 	}
 
 	const appID = "http://example.com"
@@ -74,25 +74,25 @@ func TestSerialize(t *testing.T) {
 		t.Errorf("MarshalBinary error: %v", err)
 	}
 
-	var reg2 Registration
+	var reg2 registrationRaw
 	if err := reg2.UnmarshalBinary(buf); err != nil {
 		t.Errorf("UnmarshalBinary error: %v", err)
 	}
 
-	if bytes.Compare(reg.Raw, reg2.Raw) != 0 {
+	if bytes.Compare(reg.raw, reg2.raw) != 0 {
 		t.Errorf("reg.Raw differs")
 	}
 	if bytes.Compare(reg.KeyHandle, reg2.KeyHandle) != 0 {
 		t.Errorf("reg.KeyHandle differs")
 	}
-	if reg.PubKey.Curve != reg2.PubKey.Curve {
-		t.Errorf("reg.PubKey.Curve differs")
+	if reg.PublicKey.Curve != reg2.PublicKey.Curve {
+		t.Errorf("reg.PublicKey.Curve differs")
 	}
-	if reg.PubKey.X.Cmp(reg2.PubKey.X) != 0 {
-		t.Errorf("reg.PubKey.X differs")
+	if reg.PublicKey.X.Cmp(reg2.PublicKey.X) != 0 {
+		t.Errorf("reg.PublicKey.X differs")
 	}
-	if reg.PubKey.Y.Cmp(reg2.PubKey.Y) != 0 {
-		t.Errorf("reg.PubKey.Y differs")
+	if reg.PublicKey.Y.Cmp(reg2.PublicKey.Y) != 0 {
+		t.Errorf("reg.PublicKey.Y differs")
 	}
 	if bytes.Compare(reg.AttestationCert.Raw, reg2.AttestationCert.Raw) != 0 {
 		t.Errorf("reg.AttestationCert differs")

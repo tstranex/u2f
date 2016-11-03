@@ -9,64 +9,91 @@ import (
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/asn1"
-	"errors"
 	"math/big"
 	"time"
 )
 
-// SignRequest creates a request to initiate an authentication.
-func (c *Challenge) SignRequest(reg Registration) *SignRequest {
-	var sr SignRequest
-	sr.Version = u2fVersion
-	sr.KeyHandle = encodeBase64(reg.KeyHandle)
-	sr.AppID = c.AppID
-	sr.Challenge = encodeBase64(c.Challenge)
-	return &sr
+// SignRequest creates a request to initiate authentication.
+func (c *Challenge) SignRequest() *SignRequestMessage {
+	var m SignRequestMessage
+
+	// Build public message fields
+	m.AppID = c.AppID
+	m.Challenge = encodeBase64(c.Challenge)
+
+	// Add existing keys to request message
+	for _, r := range c.RegisteredKeys {
+		key := registeredKey{
+			Version:   u2fVersion,
+			KeyHandle: r.KeyHandle}
+		m.RegisteredKeys = append(m.RegisteredKeys, key)
+	}
+
+	return &m
 }
 
-// Authenticate validates a SignResponse authentication response.
+// Authenticate validates a SignResponse authentication response against an particular Challenge.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
-func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter uint32) (newCounter uint32, err error) {
+func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	if time.Now().Sub(c.Timestamp) > timeout {
-		return 0, errors.New("u2f: challenge has expired")
+		return nil, ErrChallengeExpired
 	}
-	if resp.KeyHandle != encodeBase64(reg.KeyHandle) {
-		return 0, errors.New("u2f: wrong key handle")
+
+	// Convert registrations to raw equivalents
+	rawKeys := []registrationRaw{}
+	for _, v := range c.RegisteredKeys {
+		rawKey := registrationRaw{}
+		rawKey.FromRegistration(v)
+		rawKeys = append(rawKeys, rawKey)
+	}
+
+	// Find appropriate registration
+	var reg *registrationRaw = nil
+	for _, r := range rawKeys {
+		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
+			reg = &r
+		}
+	}
+	if reg == nil {
+		return nil, ErrWrongKeyHandle
 	}
 
 	sigData, err := decodeBase64(resp.SignatureData)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	clientData, err := decodeBase64(resp.ClientData)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	ar, err := parseSignResponse(sigData)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	if ar.Counter < counter {
-		return 0, errors.New("u2f: counter not increasing")
+	if ar.Counter < reg.Counter {
+		return nil, ErrCounterLow
+	}
+	reg.Counter = ar.Counter
+
+	if err := verifyClientData(clientData, *c); err != nil {
+		return nil, err
 	}
 
-	if err := verifyClientData(clientData, c); err != nil {
-		return 0, err
-	}
-
-	if err := verifyAuthSignature(*ar, &reg.PubKey, c.AppID, clientData); err != nil {
-		return 0, err
+	if err := verifyAuthSignature(*ar, &reg.PublicKey, c.AppID, clientData); err != nil {
+		return nil, err
 	}
 
 	if !ar.UserPresenceVerified {
-		return 0, errors.New("u2f: user was not present")
+		return nil, ErrUserNotPresent
 	}
 
-	return ar.Counter, nil
+	cleanReg := reg.ToRegistration()
+
+	return cleanReg, nil
 }
 
 type ecdsaSig struct {
@@ -82,14 +109,14 @@ type authResp struct {
 
 func parseSignResponse(sd []byte) (*authResp, error) {
 	if len(sd) < 5 {
-		return nil, errors.New("u2f: data is too short")
+		return nil, ErrDataShort
 	}
 
 	var ar authResp
 
 	userPresence := sd[0]
 	if userPresence|1 != 1 {
-		return nil, errors.New("u2f: invalid user presence byte")
+		return nil, ErrInvalidPresense
 	}
 	ar.UserPresenceVerified = userPresence == 1
 
@@ -102,7 +129,7 @@ func parseSignResponse(sd []byte) (*authResp, error) {
 		return nil, err
 	}
 	if len(rest) != 0 {
-		return nil, errors.New("u2f: trailing data")
+		return nil, ErrTrailingData
 	}
 
 	return &ar, nil
@@ -119,7 +146,7 @@ func verifyAuthSignature(ar authResp, pubKey *ecdsa.PublicKey, appID string, cli
 	hash := sha256.Sum256(buf)
 
 	if !ecdsa.Verify(pubKey, hash[:], ar.sig.R, ar.sig.S) {
-		return errors.New("u2f: invalid signature")
+		return ErrInvalidSig
 	}
 
 	return nil

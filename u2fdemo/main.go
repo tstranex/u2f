@@ -11,12 +11,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/tstranex/u2f"
+	"github.com/ryankurte/go-u2f"
 )
-
-type authenticateRequest struct {
-	SignRequests []u2f.SignRequest `json:"signRequests"`
-}
 
 const appID = "https://localhost:3483"
 
@@ -26,11 +22,11 @@ var trustedFacets = []string{appID}
 // For the purposes of the demo, we just store them in memory.
 var challenge *u2f.Challenge
 
-var registration []u2f.Registration
+var registrations []u2f.Registration
 var counter uint32
 
 func registerRequest(w http.ResponseWriter, r *http.Request) {
-	c, err := u2f.NewChallenge(appID, trustedFacets)
+	c, err := u2f.NewChallenge(appID, trustedFacets, registrations)
 	if err != nil {
 		log.Printf("u2f.NewChallenge error: %v", err)
 		http.Error(w, "error", http.StatusInternalServerError)
@@ -55,14 +51,14 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reg, err := u2f.Register(regResp, *challenge, nil)
+	reg, err := challenge.Register(regResp, &u2f.RegistrationConfig{SkipAttestationVerify: true})
 	if err != nil {
 		log.Printf("u2f.Register error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
 		return
 	}
 
-	registration = append(registration, *reg)
+	registrations = append(registrations, *reg)
 	counter = 0
 
 	log.Printf("Registration success: %+v", reg)
@@ -70,12 +66,12 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 }
 
 func signRequest(w http.ResponseWriter, r *http.Request) {
-	if registration == nil {
-		http.Error(w, "registration missing", http.StatusBadRequest)
+	if registrations == nil {
+		http.Error(w, "registrations missing", http.StatusBadRequest)
 		return
 	}
 
-	c, err := u2f.NewChallenge(appID, trustedFacets)
+	c, err := u2f.NewChallenge(appID, trustedFacets, registrations)
 	if err != nil {
 		log.Printf("u2f.NewChallenge error: %v", err)
 		http.Error(w, "error", http.StatusInternalServerError)
@@ -83,13 +79,9 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	challenge = c
 
-	var req authenticateRequest
-	for _, reg := range registration {
-		sr := c.SignRequest(reg)
-		req.SignRequests = append(req.SignRequests, *sr)
-	}
+	req := c.SignRequest()
 
-	log.Printf("authenitcateRequest: %+v", req)
+	log.Printf("authenticateRequest: %+v", req)
 	json.NewEncoder(w).Encode(req)
 }
 
@@ -106,20 +98,16 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "challenge missing", http.StatusBadRequest)
 		return
 	}
-	if registration == nil {
-		http.Error(w, "registration missing", http.StatusBadRequest)
+	if registrations == nil {
+		http.Error(w, "registrations missing", http.StatusBadRequest)
 		return
 	}
 
-	var err error
-	for _, reg := range registration {
-		newCounter, err := reg.Authenticate(signResp, *challenge, counter)
-		if err == nil {
-			log.Printf("newCounter: %d", newCounter)
-			counter = newCounter
-			w.Write([]byte("success"))
-			return
-		}
+	newCounter, err := challenge.Authenticate(signResp)
+	if err == nil {
+		log.Printf("newCounter: %d", newCounter)
+		w.Write([]byte("success"))
+		return
 	}
 
 	log.Printf("VerifySignResponse error: %v", err)
@@ -153,23 +141,26 @@ const indexHTML = `
 
   function register() {
     $.getJSON('/registerRequest').done(function(req) {
+      console.log("Registration request:")
       console.log(req);
-      u2f.register(req.appId, [req], [], u2fRegistered, 60);
+      u2f.register(req.appId, req.registerRequests, req.registeredKeys, u2fRegistered, 60);
     });
   }
 
   function u2fSigned(resp) {
     console.log(resp);
+    console.log("Sign response:")
+
     $.post('/signResponse', JSON.stringify(resp)).done(function() {
-      alert('Success');
+        alert('Success');
     });
   }
 
   function sign() {
     $.getJSON('/signRequest').done(function(req) {
+      console.log("Sign request:")
       console.log(req);
-      var r = req.signRequests[0];
-      u2f.sign(r.appId, r.challenge, req.signRequests, u2fSigned, 60);
+      u2f.sign(req.appId, req.challenge, req.registeredKeys, u2fSigned, 60);
     });
   }
 
