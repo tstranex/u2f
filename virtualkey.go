@@ -225,6 +225,7 @@ func (vk *VirtualKey) HandleAuthenticationRequest(req SignRequestMessage) (*Sign
 	// Find the registered key for this service
 	for _, k := range req.RegisteredKeys {
 		kh, _ := decodeBase64(k.KeyHandle)
+
 		ki := vk.getKeyByAppIDAndKeyHandle(req.AppID, string(kh))
 		if ki != nil {
 

@@ -95,24 +95,24 @@ const timeout = 5 * time.Minute
 
 // Errors for external use
 var (
-    // Authentication errors
-    ErrCounterLow = errors.New("u2f: counter not increasing")
-    ErrRandomGen = errors.New("u2f: unable to generate random bytes")
-    ErrUntrustedFacet = errors.New("u2f: untrusted facet id")
-    ErrWrongKeyHandle = errors.New("u2f: wrong key handle")
-    ErrChallengeExpired = errors.New("u2f: challenge has expired")
-    ErrChallengeMismatch = errors.New("u2f: challenge does not match")
-    ErrUserNotPresent = errors.New("u2f: user was not present")
+	// Authentication errors
+	ErrCounterLow        = errors.New("u2f: counter not increasing")
+	ErrRandomGen         = errors.New("u2f: unable to generate random bytes")
+	ErrUntrustedFacet    = errors.New("u2f: untrusted facet id")
+	ErrWrongKeyHandle    = errors.New("u2f: wrong key handle")
+	ErrChallengeExpired  = errors.New("u2f: challenge has expired")
+	ErrChallengeMismatch = errors.New("u2f: challenge does not match")
+	ErrUserNotPresent    = errors.New("u2f: user was not present")
 
-    // Parser errors
-    ErrDataShort = errors.New("u2f: data is too short")
-    ErrTrailingData = errors.New("u2f: trailing data")
+	// Parser errors
+	ErrDataShort    = errors.New("u2f: data is too short")
+	ErrTrailingData = errors.New("u2f: trailing data")
 
-    ErrInvalidPresense = errors.New("u2f: invalid user presence byte")
-    ErrInvalidSig = errors.New("u2f: invalid signature")
-    ErrInvalidReservedByte = errors.New("u2f: invalid reserved byte")
-    ErrInvalidPublicKey = errors.New("u2f: invalid public key")
-    ErrInvalidKeyHandle = errors.New("u2f: invalid key handle")
+	ErrInvalidPresense     = errors.New("u2f: invalid user presence byte")
+	ErrInvalidSig          = errors.New("u2f: invalid signature")
+	ErrInvalidReservedByte = errors.New("u2f: invalid reserved byte")
+	ErrInvalidPublicKey    = errors.New("u2f: invalid public key")
+	ErrInvalidKeyHandle    = errors.New("u2f: invalid key handle")
 )
 
 // Decode websafe base64

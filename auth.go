@@ -25,7 +25,7 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 	for _, r := range c.RegisteredKeys {
 		key := registeredKey{
 			Version:   u2fVersion,
-			KeyHandle: encodeBase64([]byte(r.KeyHandle))}
+			KeyHandle: r.KeyHandle}
 		m.RegisteredKeys = append(m.RegisteredKeys, key)
 	}
 

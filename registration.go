@@ -57,7 +57,7 @@ func (r *registrationRaw) MarshalBinary() ([]byte, error) {
 func (reg *registrationRaw) ToRegistration() *Registration {
 
 	// Convert to strings
-	keyHandleString := string(reg.KeyHandle)
+	keyHandleString := encodeBase64(reg.KeyHandle)
 	publicKeyString := encodeBase64(elliptic.Marshal(reg.PublicKey.Curve, reg.PublicKey.X, reg.PublicKey.Y))
 	certString := encodeBase64(reg.AttestationCert.Raw)
 
@@ -76,7 +76,7 @@ func (reg *registrationRaw) ToRegistration() *Registration {
 func (reg *registrationRaw) FromRegistration(r Registration) error {
 
 	// Convert and set fields
-	reg.KeyHandle = []byte(r.KeyHandle)
+	reg.KeyHandle, _ = decodeBase64(r.KeyHandle)
 
 	// Public key
 	publicKeyDecoded, err := decodeBase64(r.PublicKey)
