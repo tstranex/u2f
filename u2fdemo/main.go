@@ -14,10 +14,6 @@ import (
 	"github.com/tstranex/u2f"
 )
 
-type authenticateRequest struct {
-	SignRequests []u2f.SignRequest `json:"signRequests"`
-}
-
 const appID = "https://localhost:3483"
 
 var trustedFacets = []string{appID}
@@ -83,13 +79,9 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	challenge = c
 
-	var req authenticateRequest
-	for _, reg := range registration {
-		sr := c.SignRequest(reg)
-		req.SignRequests = append(req.SignRequests, *sr)
-	}
+	req := c.SignRequest(registration...)
 
-	log.Printf("authenitcateRequest: %+v", req)
+	log.Printf("Sign request: %+v", req)
 	json.NewEncoder(w).Encode(req)
 }
 
@@ -113,8 +105,8 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	for _, reg := range registration {
-		newCounter, err := reg.Authenticate(signResp, *challenge, counter)
-		if err == nil {
+		newCounter, authErr := reg.Authenticate(signResp, *challenge, counter)
+		if authErr == nil {
 			log.Printf("newCounter: %d", newCounter)
 			counter = newCounter
 			w.Write([]byte("success"))
@@ -168,8 +160,10 @@ const indexHTML = `
   function sign() {
     $.getJSON('/signRequest').done(function(req) {
       console.log(req);
-      var r = req.signRequests[0];
-      u2f.sign(r.appId, r.challenge, req.signRequests, u2fSigned, 60);
+			var registeredKeys = req.keyHandles.map(function(h) {
+				return {'keyHandle': h, 'version': req.version, 'appId': req.appId};
+			});
+      u2f.sign(req.appId, req.challenge, registeredKeys, u2fSigned, 60);
     });
   }
 

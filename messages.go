@@ -41,10 +41,10 @@ type RegisterResponse struct {
 
 // SignRequest as defined by the FIDO U2F Javascript API.
 type SignRequest struct {
-	Version   string `json:"version"`
-	Challenge string `json:"challenge"`
-	KeyHandle string `json:"keyHandle"`
-	AppID     string `json:"appId"`
+	Version    string   `json:"version"`
+	Challenge  string   `json:"challenge"`
+	KeyHandles []string `json:"keyHandles"`
+	AppID      string   `json:"appId"`
 }
 
 // SignResponse as defined by the FIDO U2F Javascript API.
