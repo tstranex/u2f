@@ -15,10 +15,15 @@ import (
 )
 
 // SignRequest creates a request to initiate an authentication.
-func (c *Challenge) SignRequest(reg Registration) *SignRequest {
+func (c *Challenge) SignRequest(regs ...Registration) *SignRequest {
+	var encodedHandles = make([]string, len(regs), len(regs))
+	for i, r := range regs {
+		encodedHandles[i] = encodeBase64(r.KeyHandle)
+	}
+
 	var sr SignRequest
 	sr.Version = u2fVersion
-	sr.KeyHandle = encodeBase64(reg.KeyHandle)
+	sr.KeyHandles = encodedHandles
 	sr.AppID = c.AppID
 	sr.Challenge = encodeBase64(c.Challenge)
 	return &sr
