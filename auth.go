@@ -29,6 +29,12 @@ func (c *Challenge) SignRequest(regs ...Registration) *SignRequest {
 	return &sr
 }
 
+// ErrCounterTooLow is raised when the counter value received from the device is
+// lower than last stored counter value. This may indicate that the device has
+// been cloned (or is malfunctioning). The application may choose to disable
+// the particular device as precaution.
+var ErrCounterTooLow = errors.New("u2f: counter too low")
+
 // Authenticate validates a SignResponse authentication response.
 // An error is returned if any part of the response fails to validate.
 // The latest counter value is returned, which the caller should store.
@@ -56,7 +62,7 @@ func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter ui
 	}
 
 	if ar.Counter < counter {
-		return 0, errors.New("u2f: counter not increasing")
+		return 0, ErrCounterTooLow
 	}
 
 	if err := verifyClientData(clientData, c); err != nil {
