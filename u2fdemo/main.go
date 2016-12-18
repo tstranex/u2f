@@ -134,6 +134,8 @@ const indexHTML = `
       <li><a href="javascript:sign();">Authenticate</a></li>
     </ul>
 
+    <p>Open Chrome Developer Tools to see debug console logs.</p>
+
     <script>
 
   function u2fRegistered(resp) {
@@ -160,9 +162,9 @@ const indexHTML = `
   function sign() {
     $.getJSON('/signRequest').done(function(req) {
       console.log(req);
-			var registeredKeys = req.keyHandles.map(function(h) {
-				return {'keyHandle': h, 'version': req.version, 'appId': req.appId};
-			});
+      var registeredKeys = req.keyHandles.map(function(h) {
+        return {'keyHandle': h, 'version': req.version, 'appId': req.appId};
+      });
       u2f.sign(req.appId, req.challenge, registeredKeys, u2fSigned, 60);
     });
   }
