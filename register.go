@@ -15,15 +15,6 @@ import (
 	"time"
 )
 
-// RegisterRequest creates a request to enrol a new token.
-func (c *Challenge) RegisterRequest() *RegisterRequest {
-	var rr RegisterRequest
-	rr.Version = u2fVersion
-	rr.AppID = c.AppID
-	rr.Challenge = encodeBase64(c.Challenge)
-	return &rr
-}
-
 // Registration represents a single enrolment or pairing between an
 // application and a token. This data will typically be stored in a database.
 type Registration struct {
@@ -37,6 +28,7 @@ type Registration struct {
 	AttestationCert *x509.Certificate
 }
 
+// Config contains configurable options for the package.
 type Config struct {
 	// SkipAttestationVerify controls whether the token attestation
 	// certificate should be verified on registration. Ideally it should
@@ -136,7 +128,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	return &r, sig, nil
 }
 
-// Implements encoding.BinaryMarshaler.
+// UnmarshalBinary implements encoding.BinaryMarshaler.
 func (r *Registration) UnmarshalBinary(data []byte) error {
 	reg, _, err := parseRegistration(data)
 	if err != nil {
@@ -146,7 +138,7 @@ func (r *Registration) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// Implements encoding.BinaryUnmarshaler.
+// MarshalBinary implements encoding.BinaryUnmarshaler.
 func (r *Registration) MarshalBinary() ([]byte, error) {
 	return r.Raw, nil
 }
@@ -176,4 +168,34 @@ func verifyRegistrationSignature(
 
 	return r.AttestationCert.CheckSignature(
 		x509.ECDSAWithSHA256, buf, signature)
+}
+
+func getRegisteredKey(appID string, r Registration) RegisteredKey {
+	return RegisteredKey{
+		Version:   u2fVersion,
+		KeyHandle: encodeBase64(r.KeyHandle),
+		AppID:     appID,
+	}
+}
+
+// NewWebRegisterRequest creates a request to enrol a new token.
+// regs is the list of the user's existing registration. The browser will
+// refuse to re-register a device if it has an existing registration.
+func NewWebRegisterRequest(c *Challenge, regs []Registration) *WebRegisterRequest {
+	req := RegisterRequest{
+		Version:   u2fVersion,
+		Challenge: encodeBase64(c.Challenge),
+	}
+
+	rr := WebRegisterRequest{
+		AppID:            c.AppID,
+		RegisterRequests: []RegisterRequest{req},
+	}
+
+	for _, r := range regs {
+		rk := getRegisteredKey(c.AppID, r)
+		rr.RegisteredKeys = append(rr.RegisteredKeys, rk)
+	}
+
+	return &rr
 }

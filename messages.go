@@ -26,28 +26,45 @@ type ClientData struct {
 	CIDPubKey json.RawMessage `json:"cid_pubkey"`
 }
 
-// RegisterRequest as defined by the FIDO U2F Javascript API.
+// RegisterRequest as defined by the FIDO U2F Javascript API 1.1.
 type RegisterRequest struct {
 	Version   string `json:"version"`
 	Challenge string `json:"challenge"`
-	AppID     string `json:"appId"`
 }
 
-// RegisterResponse as defined by the FIDO U2F Javascript API.
+// WebRegisterRequest contains the parameters needed for the u2f.register()
+// high-level Javascript API function as defined by the
+// FIDO U2F Javascript API 1.1.
+type WebRegisterRequest struct {
+	AppID            string            `json:"appId"`
+	RegisterRequests []RegisterRequest `json:"registerRequests"`
+	RegisteredKeys   []RegisteredKey   `json:"registeredKeys"`
+}
+
+// RegisterResponse as defined by the FIDO U2F Javascript API 1.1.
 type RegisterResponse struct {
+	Version          string `json:"version"`
 	RegistrationData string `json:"registrationData"`
 	ClientData       string `json:"clientData"`
 }
 
-// SignRequest as defined by the FIDO U2F Javascript API.
-type SignRequest struct {
-	Version    string   `json:"version"`
-	Challenge  string   `json:"challenge"`
-	KeyHandles []string `json:"keyHandles"`
-	AppID      string   `json:"appId"`
+// RegisteredKey as defined by the FIDO U2F Javascript API 1.1.
+type RegisteredKey struct {
+	Version   string `json:"version"`
+	KeyHandle string `json:"keyHandle"`
+	AppID     string `json:"appId"`
 }
 
-// SignResponse as defined by the FIDO U2F Javascript API.
+// WebSignRequest contains the parameters needed for the u2f.sign()
+// high-level Javascript API function as defined by the
+// FIDO U2F Javascript API 1.1.
+type WebSignRequest struct {
+	AppID          string          `json:"appId"`
+	Challenge      string          `json:"challenge"`
+	RegisteredKeys []RegisteredKey `json:"registeredKeys"`
+}
+
+// SignResponse as defined by the FIDO U2F Javascript API 1.1.
 type SignResponse struct {
 	KeyHandle     string `json:"keyHandle"`
 	SignatureData string `json:"signatureData"`

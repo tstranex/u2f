@@ -22,7 +22,7 @@ var trustedFacets = []string{appID}
 // For the purposes of the demo, we just store them in memory.
 var challenge *u2f.Challenge
 
-var registration []u2f.Registration
+var registrations []u2f.Registration
 var counter uint32
 
 func registerRequest(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func registerRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	challenge = c
-	req := c.RegisterRequest()
+	req := u2f.NewWebRegisterRequest(c, registrations)
 
 	log.Printf("registerRequest: %+v", req)
 	json.NewEncoder(w).Encode(req)
@@ -58,7 +58,7 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	registration = append(registration, *reg)
+	registrations = append(registrations, *reg)
 	counter = 0
 
 	log.Printf("Registration success: %+v", reg)
@@ -66,7 +66,7 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 }
 
 func signRequest(w http.ResponseWriter, r *http.Request) {
-	if registration == nil {
+	if registrations == nil {
 		http.Error(w, "registration missing", http.StatusBadRequest)
 		return
 	}
@@ -79,7 +79,7 @@ func signRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	challenge = c
 
-	req := c.SignRequest(registration...)
+	req := c.SignRequest(registrations)
 
 	log.Printf("Sign request: %+v", req)
 	json.NewEncoder(w).Encode(req)
@@ -98,13 +98,13 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "challenge missing", http.StatusBadRequest)
 		return
 	}
-	if registration == nil {
+	if registrations == nil {
 		http.Error(w, "registration missing", http.StatusBadRequest)
 		return
 	}
 
 	var err error
-	for _, reg := range registration {
+	for _, reg := range registrations {
 		newCounter, authErr := reg.Authenticate(signResp, *challenge, counter)
 		if authErr == nil {
 			log.Printf("newCounter: %d", newCounter)
@@ -123,6 +123,9 @@ const indexHTML = `
 <html>
   <head>
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+
+    <!-- The original u2f-api.js code can be found here:
+    https://github.com/google/u2f-ref-code/blob/master/u2f-gae-demo/war/js/u2f-api.js -->
     <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
 
   </head>
@@ -138,35 +141,64 @@ const indexHTML = `
 
     <script>
 
+  function serverError(data) {
+    console.log(data);
+    alert('Server error code ' + data.status + ': ' + data.responseText);
+  }
+
+  function checkError(resp) {
+    if (!('errorCode' in resp)) {
+      return false;
+    }
+    if (resp.errorCode === u2f.ErrorCodes['OK']) {
+      return false;
+    }
+    var msg = 'U2F error code ' + resp.errorCode;
+    for (name in u2f.ErrorCodes) {
+      if (u2f.ErrorCodes[name] === resp.errorCode) {
+        msg += ' (' + name + ')';
+      }
+    }
+    if (resp.errorMessage) {
+      msg += ': ' + resp.errorMessage;
+    }
+    console.log(msg);
+    alert(msg);
+    return true;
+  }
+
   function u2fRegistered(resp) {
     console.log(resp);
-    $.post('/registerResponse', JSON.stringify(resp)).done(function() {
+    if (checkError(resp)) {
+      return;
+    }
+    $.post('/registerResponse', JSON.stringify(resp)).success(function() {
       alert('Success');
-    });
+    }).fail(serverError);
   }
 
   function register() {
-    $.getJSON('/registerRequest').done(function(req) {
+    $.getJSON('/registerRequest').success(function(req) {
       console.log(req);
-      u2f.register(req.appId, [req], [], u2fRegistered, 60);
-    });
+      u2f.register(req.appId, req.registerRequests, req.registeredKeys, u2fRegistered, 30);
+    }).fail(serverError);
   }
 
   function u2fSigned(resp) {
     console.log(resp);
-    $.post('/signResponse', JSON.stringify(resp)).done(function() {
+    if (checkError(resp)) {
+      return;
+    }
+    $.post('/signResponse', JSON.stringify(resp)).success(function() {
       alert('Success');
-    });
+    }).fail(serverError);
   }
 
   function sign() {
-    $.getJSON('/signRequest').done(function(req) {
+    $.getJSON('/signRequest').success(function(req) {
       console.log(req);
-      var registeredKeys = req.keyHandles.map(function(h) {
-        return {'keyHandle': h, 'version': req.version, 'appId': req.appId};
-      });
-      u2f.sign(req.appId, req.challenge, registeredKeys, u2fSigned, 60);
-    });
+      u2f.sign(req.appId, req.challenge, req.registeredKeys, u2fSigned, 30);
+    }).fail(serverError);
   }
 
     </script>

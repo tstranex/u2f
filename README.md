@@ -73,6 +73,23 @@ Open https://localhost:3483 in Chrome.
 Ignore the SSL warning (due to the self-signed certificate for localhost).
 You can then test registering and authenticating using your token.
 
+## Changelog
+
+- 2016-12-18: The package has been updated to work with the new
+  U2F Javascript 1.1 API specification. This causes some breaking changes.
+
+  `SignRequest` has been replaced by `WebSignRequest` which now includes
+  multiple registrations. This is useful when the user has multiple devices
+  registered since you can now authenticate against any of them with a single
+  request.
+
+  `WebRegisterRequest` has been introduced, which should generally be used
+  instead of using `RegisterRequest` directly. It includes the list of existing
+  registrations with the new registration request. If the user's device already
+  matches one of the existing registrations, it will refuse to re-register.
+
+  `Challenge.RegisterRequest` has been replaced by `NewWebRegisterRequest`.
+
 ## License
 
 The Go FIDO U2F Library is licensed under the MIT License.

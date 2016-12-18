@@ -15,17 +15,14 @@ import (
 )
 
 // SignRequest creates a request to initiate an authentication.
-func (c *Challenge) SignRequest(regs ...Registration) *SignRequest {
-	var encodedHandles = make([]string, len(regs), len(regs))
-	for i, r := range regs {
-		encodedHandles[i] = encodeBase64(r.KeyHandle)
-	}
-
-	var sr SignRequest
-	sr.Version = u2fVersion
-	sr.KeyHandles = encodedHandles
+func (c *Challenge) SignRequest(regs []Registration) *WebSignRequest {
+	var sr WebSignRequest
 	sr.AppID = c.AppID
 	sr.Challenge = encodeBase64(c.Challenge)
+	for _, r := range regs {
+		rk := getRegisteredKey(c.AppID, r)
+		sr.RegisteredKeys = append(sr.RegisteredKeys, rk)
+	}
 	return &sr
 }
 
@@ -37,6 +34,8 @@ var ErrCounterTooLow = errors.New("u2f: counter too low")
 
 // Authenticate validates a SignResponse authentication response.
 // An error is returned if any part of the response fails to validate.
+// The counter should be the counter associated with appropriate device
+// (i.e. resp.KeyHandle).
 // The latest counter value is returned, which the caller should store.
 func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter uint32) (newCounter uint32, err error) {
 	if time.Now().Sub(c.Timestamp) > timeout {

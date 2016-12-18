@@ -14,7 +14,7 @@ To enrol a new token:
 
     app_id := "http://localhost"
     c, _ := NewChallenge(app_id, []string{app_id})
-    req, _ := c.RegisterRequest()
+    req, _ := u2f.NewWebRegisterRequest(c, existingTokens)
     // Send the request to the browser.
     var resp RegisterResponse
     // Read resp from the browser.
@@ -26,10 +26,10 @@ To enrol a new token:
 
 To perform an authentication:
 
-    var reg Registration
-    // Fetch reg from the database.
+    var regs []Registration
+    // Fetch regs from the database.
     c, _ := NewChallenge(app_id, []string{app_id})
-    req, _ := c.SignRequest(reg)
+    req, _ := c.SignRequest(regs)
     // Send the request to the browser.
     var resp SignResponse
     // Read resp from the browser.
