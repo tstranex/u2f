@@ -35,6 +35,11 @@ type Config struct {
 	// always be verified. However, there is currently no public list of
 	// trusted attestation root certificates so it may be necessary to skip.
 	SkipAttestationVerify bool
+
+	// RootAttestationCertPool overrides the default root certificates used
+	// to verify client attestations. If nil, this defaults to the roots that are
+	// bundled in this library.
+	RootAttestationCertPool *x509.CertPool
 }
 
 // Register validates a RegisterResponse message to enrol a new token.
@@ -147,8 +152,12 @@ func verifyAttestationCert(r Registration, config *Config) error {
 	if config.SkipAttestationVerify {
 		return nil
 	}
+	rootCertPool := roots
+	if config.RootAttestationCertPool != nil {
+		rootCertPool = config.RootAttestationCertPool
+	}
 
-	opts := x509.VerifyOptions{Roots: roots}
+	opts := x509.VerifyOptions{Roots: rootCertPool}
 	_, err := r.AttestationCert.Verify(opts)
 	return err
 }
