@@ -3,6 +3,8 @@
 This Go package implements the parts of the FIDO U2F specification required on
 the server side of an application.
 
+[![Build Status](https://travis-ci.org/tstranex/u2f.svg?branch=master)](https://travis-ci.org/tstranex/u2f)
+
 ## Features
 
 - Native Go implementation
