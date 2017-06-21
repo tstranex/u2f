@@ -58,6 +58,10 @@ import (
 const u2fVersion = "U2F_V2"
 const timeout = 5 * time.Minute
 
+// TimeNow points to a function that returns the current time. By default
+// it is time.Now, but can be replaced for testing.
+var TimeNow = time.Now
+
 func decodeBase64(s string) ([]byte, error) {
 	for i := 0; i < len(s)%4; i++ {
 		s += "="
@@ -92,7 +96,7 @@ func NewChallenge(appID string, trustedFacets []string) (*Challenge, error) {
 
 	var c Challenge
 	c.Challenge = challenge
-	c.Timestamp = time.Now()
+	c.Timestamp = TimeNow()
 	c.AppID = appID
 	c.TrustedFacets = trustedFacets
 	return &c, nil
