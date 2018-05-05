@@ -51,7 +51,13 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reg, err := u2f.Register(regResp, *challenge, nil)
+	config := &u2f.Config{
+		// Chrome 66+ doesn't return the device's attestation
+		// certificate by default.
+		SkipAttestationVerify: true,
+	}
+
+	reg, err := u2f.Register(regResp, *challenge, config)
 	if err != nil {
 		log.Printf("u2f.Register error: %v", err)
 		http.Error(w, "error verifying response", http.StatusInternalServerError)
