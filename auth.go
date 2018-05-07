@@ -11,7 +11,6 @@ import (
 	"encoding/asn1"
 	"errors"
 	"math/big"
-	"time"
 )
 
 // SignRequest creates a request to initiate an authentication.
@@ -38,7 +37,7 @@ var ErrCounterTooLow = errors.New("u2f: counter too low")
 // (i.e. resp.KeyHandle).
 // The latest counter value is returned, which the caller should store.
 func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter uint32) (newCounter uint32, err error) {
-	if time.Now().Sub(c.Timestamp) > timeout {
+	if TimeNow().Sub(c.Timestamp) > timeout {
 		return 0, errors.New("u2f: challenge has expired")
 	}
 	if resp.KeyHandle != encodeBase64(reg.KeyHandle) {

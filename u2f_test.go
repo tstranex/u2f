@@ -19,7 +19,7 @@ func TestFull(t *testing.T) {
 	c1, _ := decodeBase64("s4UJ3wkN80p4wLjyI2Guv-_a-s7LV54Ic9PAZvHo_lM")
 	registerChallenge := Challenge{
 		Challenge:     c1,
-		Timestamp:     time.Now().Add(-time.Minute),
+		Timestamp:     TimeNow().Add(-time.Minute),
 		AppID:         appID,
 		TrustedFacets: []string{appID},
 	}
@@ -38,7 +38,7 @@ func TestFull(t *testing.T) {
 	c2, _ := decodeBase64("PzN6SGiUaeypErE3SCHeRlkRxVwfWlGVi35gfq6LsdY")
 	authChallenge := Challenge{
 		Challenge:     c2,
-		Timestamp:     time.Now().Add(-time.Minute),
+		Timestamp:     TimeNow().Add(-time.Minute),
 		AppID:         appID,
 		TrustedFacets: []string{appID},
 	}

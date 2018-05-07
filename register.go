@@ -13,7 +13,6 @@ import (
 	"encoding/asn1"
 	"encoding/hex"
 	"errors"
-	"time"
 )
 
 // Registration represents a single enrolment or pairing between an
@@ -51,7 +50,7 @@ func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration
 		config = &Config{}
 	}
 
-	if time.Now().Sub(c.Timestamp) > timeout {
+	if TimeNow().Sub(c.Timestamp) > timeout {
 		return nil, errors.New("u2f: challenge has expired")
 	}
 
