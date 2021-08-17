@@ -36,7 +36,13 @@ var ErrCounterTooLow = errors.New("u2f: counter too low")
 // The counter should be the counter associated with appropriate device
 // (i.e. resp.KeyHandle).
 // The latest counter value is returned, which the caller should store.
-func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter uint32, config *Config) (newCounter uint32, err error) {
+func (reg *Registration) Authenticate(resp SignResponse, c Challenge, counter uint32) (newCounter uint32, err error) {
+	return reg.AuthenticateConfig(resp, c, counter, nil)
+}
+
+// AuthenticateConfig is a variant of Authenticate where config.Time is used if
+// set.
+func (reg *Registration) AuthenticateConfig(resp SignResponse, c Challenge, counter uint32, config *Config) (newCounter uint32, err error) {
 	if config.timeNow().Sub(c.Timestamp) > timeout {
 		return 0, errors.New("u2f: challenge has expired")
 	}

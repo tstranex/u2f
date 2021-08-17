@@ -14,7 +14,7 @@ import (
 )
 
 func TestFull(t *testing.T) {
-	testFunc := func(t *testing.T, nilConfig bool) {
+	testFunc := func(t *testing.T, useConfig bool) {
 		// These are actual responses from a Yubikey with Chrome.
 
 		const appID = "http://localhost:3483"
@@ -22,7 +22,7 @@ func TestFull(t *testing.T) {
 		timeNow := time.Now()
 
 		var config *Config
-		if !nilConfig {
+		if useConfig {
 			config = &Config{
 				Time: func() time.Time { return timeNow },
 			}
@@ -39,7 +39,7 @@ func TestFull(t *testing.T) {
 			}
 		}
 
-		registerChallenge, err := NewChallenge(appID, []string{appID}, challengeConfig("s4UJ3wkN80p4wLjyI2Guv-_a-s7LV54Ic9PAZvHo_lM"))
+		registerChallenge, err := NewChallengeConfig(appID, []string{appID}, challengeConfig("s4UJ3wkN80p4wLjyI2Guv-_a-s7LV54Ic9PAZvHo_lM"))
 		if err != nil {
 			t.Error(err)
 		}
@@ -55,7 +55,7 @@ func TestFull(t *testing.T) {
 			t.Error(err)
 		}
 
-		authChallenge, err := NewChallenge(appID, []string{appID}, challengeConfig("PzN6SGiUaeypErE3SCHeRlkRxVwfWlGVi35gfq6LsdY"))
+		authChallenge, err := NewChallengeConfig(appID, []string{appID}, challengeConfig("PzN6SGiUaeypErE3SCHeRlkRxVwfWlGVi35gfq6LsdY"))
 		if err != nil {
 			t.Error(err)
 		}
@@ -66,7 +66,14 @@ func TestFull(t *testing.T) {
 			t.Error(err)
 		}
 
-		newCounter, err := reg.Authenticate(signResp, *authChallenge, 0, config)
+		regAuthenticate := reg.Authenticate
+		if useConfig {
+			regAuthenticate = func(resp SignResponse, c Challenge, counter uint32) (newCounter uint32, err error) {
+				return reg.AuthenticateConfig(resp, c, counter, config)
+			}
+		}
+
+		newCounter, err := regAuthenticate(signResp, *authChallenge, 0)
 		if err != nil {
 			t.Error(err)
 		}
@@ -74,15 +81,15 @@ func TestFull(t *testing.T) {
 			t.Errorf("Wrong new counter: %d", newCounter)
 		}
 
-		newCounter, err = reg.Authenticate(signResp, *authChallenge, 7, config)
+		newCounter, err = regAuthenticate(signResp, *authChallenge, 7)
 		if err == nil {
 			t.Errorf("Expected error due to decreasing counter")
 		}
 	}
 
-	for _, nilConfig := range []bool{true, false} {
-		t.Run(fmt.Sprintf("nilConfig=%v", nilConfig), func(t *testing.T) {
-			testFunc(t, nilConfig)
+	for _, useConfig := range []bool{false, true} {
+		t.Run(fmt.Sprintf("useConfig=%v", useConfig), func(t *testing.T) {
+			testFunc(t, useConfig)
 		})
 	}
 }

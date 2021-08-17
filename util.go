@@ -79,7 +79,13 @@ type Challenge struct {
 }
 
 // NewChallenge generates a challenge for the given application.
-func NewChallenge(appID string, trustedFacets []string, config *Config) (*Challenge, error) {
+func NewChallenge(appID string, trustedFacets []string) (*Challenge, error) {
+	return NewChallengeConfig(appID, trustedFacets, nil)
+}
+
+// NewChallengeConfig is a variant of NewChallenge where config.Rand and
+// config.Time are used if set.
+func NewChallengeConfig(appID string, trustedFacets []string, config *Config) (*Challenge, error) {
 	challenge := make([]byte, 32)
 	n, err := config.randRead(challenge)
 	if err != nil {
