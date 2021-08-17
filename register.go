@@ -8,11 +8,13 @@ package u2f
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/asn1"
 	"encoding/hex"
 	"errors"
+	"io"
 	"time"
 )
 
@@ -31,6 +33,14 @@ type Registration struct {
 
 // Config contains configurable options for the package.
 type Config struct {
+	// Rand provides the source of entropy for challenges. If Rand is nil, the
+	// cryptographic random reader in package crypto/rand is used.
+	Rand io.Reader
+
+	// Time returns the current time as the number of seconds since the epoch.
+	// If Time is nil, time.Now is used.
+	Time func() time.Time
+
 	// SkipAttestationVerify controls whether the token attestation
 	// certificate should be verified on registration. Ideally it should
 	// always be verified. However, there is currently no public list of
@@ -43,6 +53,20 @@ type Config struct {
 	RootAttestationCertPool *x509.CertPool
 }
 
+func (config *Config) randRead(b []byte) (n int, err error) {
+	if config == nil || config.Rand == nil {
+		return rand.Read(b)
+	}
+	return io.ReadFull(config.Rand, b)
+}
+
+func (config *Config) timeNow() time.Time {
+	if config == nil || config.Time == nil {
+		return time.Now()
+	}
+	return config.Time()
+}
+
 // Register validates a RegisterResponse message to enrol a new token.
 // An error is returned if any part of the response fails to validate.
 // The returned Registration should be stored by the caller.
@@ -51,7 +75,7 @@ func Register(resp RegisterResponse, c Challenge, config *Config) (*Registration
 		config = &Config{}
 	}
 
-	if time.Now().Sub(c.Timestamp) > timeout {
+	if config.timeNow().Sub(c.Timestamp) > timeout {
 		return nil, errors.New("u2f: challenge has expired")
 	}
 

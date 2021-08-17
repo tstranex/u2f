@@ -46,7 +46,6 @@ https://fidoalliance.org/specifications/download
 package u2f
 
 import (
-	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
@@ -81,8 +80,14 @@ type Challenge struct {
 
 // NewChallenge generates a challenge for the given application.
 func NewChallenge(appID string, trustedFacets []string) (*Challenge, error) {
+	return NewChallengeConfig(appID, trustedFacets, nil)
+}
+
+// NewChallengeConfig is a variant of NewChallenge where config.Rand and
+// config.Time are used if set.
+func NewChallengeConfig(appID string, trustedFacets []string, config *Config) (*Challenge, error) {
 	challenge := make([]byte, 32)
-	n, err := rand.Read(challenge)
+	n, err := config.randRead(challenge)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +97,7 @@ func NewChallenge(appID string, trustedFacets []string) (*Challenge, error) {
 
 	var c Challenge
 	c.Challenge = challenge
-	c.Timestamp = time.Now()
+	c.Timestamp = config.timeNow()
 	c.AppID = appID
 	c.TrustedFacets = trustedFacets
 	return &c, nil
