@@ -1,3 +1,7 @@
+# Archived
+
+This project is archived and there will be no further development. U2F is now obsolete - it has been replaced by WebAuthn.
+
 # Go FIDO U2F Library
 
 This Go package implements the parts of the FIDO U2F specification required on
@@ -76,6 +80,8 @@ Ignore the SSL warning (due to the self-signed certificate for localhost).
 You can then test registering and authenticating using your token.
 
 ## Changelog
+
+- 2025-05-15: The project has been archived.
 
 - 2016-12-18: The package has been updated to work with the new
   U2F Javascript 1.1 API specification. This causes some breaking changes.
